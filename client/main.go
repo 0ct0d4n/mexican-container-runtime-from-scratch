@@ -17,13 +17,13 @@ func main() {
 
 	client, err := ssh.Dial("tcp", "192.168.64.2:2222", config)
 	if err != nil {
-		log.Fatalf("Error conectando al daemon: %v", err)
+		log.Fatalf("Error connecting to daemon %v", err)
 	}
 	defer client.Close()
 
 	session, err := client.NewSession()
 	if err != nil {
-		log.Fatalf("Error creando sesión SSH: %v", err)
+		log.Fatalf("Error creating SSH session: %v", err)
 	}
 	defer session.Close()
 
@@ -38,6 +38,6 @@ func main() {
 
 	c := axolotl.NewClient("", nil, &ns, session)
 	if err := c.Create(); err != nil {
-		log.Fatalf("Error creando contenedor: %v", err)
+		log.Fatalf("Error creating container: %v", err)
 	}
 }
