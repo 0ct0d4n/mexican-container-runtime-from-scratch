@@ -3,9 +3,11 @@ package server
 import (
 	"axolotl/pkg/model"
 	"encoding/json"
+	"fmt"
 	"golang.org/x/crypto/ssh"
 	"log"
-	"time"
+	"os"
+	"path/filepath"
 )
 
 func handleAxorunCommand(ch ssh.Channel, req *ssh.Request) bool {
@@ -28,13 +30,22 @@ func handleAxorunCommand(ch ssh.Channel, req *ssh.Request) bool {
 		return true
 	}
 
-	// Simulación: ejecutar proceso
 	if _, err := ch.Write([]byte("Axolotl ejecutando...\n")); err != nil {
 		log.Printf("⚠️ Error al escribir en canal: %v", err)
 		return true
 	}
 
-	time.Sleep(1 * time.Second)
+	// creando cgroup
+	base := "/sys/fs/cgroup/"
+	path := filepath.Join(base, payload.Cgroup.Path)
+	memoryMaxPath := filepath.Join(path, "memory.max")
+	cpuMaxPath := filepath.Join(path, "cpu.max")
+	pidMaxPath := filepath.Join(path, "pids.max")
+
+	os.MkdirAll(path, 0755)
+	fmt.Printf("🦎 Creando cgroup en %s: Mem=%d, CPU=%d, PIDs=%d\n", path, payload.Cgroup.MemoryMax, payload.Cgroup.CPUMax, payload.Cgroup.PidsMax)
+
+	// configurando recursos
 
 	if _, err := ch.Write([]byte("✅ Listo\n")); err != nil {
 		log.Printf("⚠️ Error al escribir en canal: %v", err)
