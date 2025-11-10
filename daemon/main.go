@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	log.Println("Starting daemon")
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}

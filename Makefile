@@ -17,7 +17,7 @@ FLAGS = -ldflags="-s -w"
 # Targets
 # ----------------------
 
-.PHONY: all build upload install deploy clean
+.PHONY: all build upload install deploy clean run
 
 # build: compila el binario
 build:
@@ -41,9 +41,12 @@ install: upload
 		"echo $(SSHPASS) | sudo -S mv $(REMOTE_PATH)/$(BINARY_NAME) $(REMOTE_BIN)/ && echo $(SSHPASS) | sudo -S chmod +x $(REMOTE_BIN)/$(BINARY_NAME)"
 	@echo "✅ Instalación completada."
 # deploy: build + upload + install
-deploy: install
+deploy: install run
 	@echo "🚀 ¡$(BINARY_NAME) desplegado correctamente en $(REMOTE_HOST)!"
 
+run:
+	@echo "🚀 Ejecutando axod en modo interactivo..."
+	@sshpass -p $(SSHPASS) ssh -o StrictHostKeyChecking=no -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) "axod"
 # clean: elimina binario local
 clean:
 	@echo "🧹 Limpiando binarios locales..."
