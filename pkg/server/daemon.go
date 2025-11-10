@@ -32,7 +32,7 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 
 				switch req.Type {
 				case "exec":
-					var payload model.NamespaceConfig
+					var payload model.RunRequest
 					if err := json.Unmarshal(req.Payload, &payload); err != nil {
 						log.Printf("❌ Error decodificando payload: %v", err)
 						req.Reply(false, nil)

@@ -6,14 +6,8 @@ import (
 )
 
 type Client struct {
-	Req     *RunRequest
+	Req     *model.RunRequest
 	Session *ssh.Session
-}
-
-type RunRequest struct {
-	Rootfs    string                 `json:"rootfs"`
-	Command   []string               `json:"command"`
-	Namespace *model.NamespaceConfig `json:"cgroup"`
 }
 
 func NewClient(rootfs string, command []string, namespace *model.NamespaceConfig, Session *ssh.Session) *Client {
@@ -23,6 +17,6 @@ func NewClient(rootfs string, command []string, namespace *model.NamespaceConfig
 	}
 }
 
-func NewRunRequest(rootfs string, command []string, namespace *model.NamespaceConfig) *RunRequest {
-	return &RunRequest{Rootfs: rootfs, Command: command, Namespace: namespace}
+func NewRunRequest(rootfs string, command []string, namespace *model.NamespaceConfig) *model.RunRequest {
+	return &model.RunRequest{Rootfs: rootfs, Command: command, Namespace: namespace}
 }
