@@ -1,11 +1,9 @@
 package server
 
 import (
-	"axolotl/pkg/model"
-	"encoding/json"
+	"axolotl/pkg/command"
 	"golang.org/x/crypto/ssh"
 	"log"
-	"time"
 )
 
 func HandleConnection(chans <-chan ssh.NewChannel) {
@@ -21,44 +19,52 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 			continue
 		}
 
-		go func(ch ssh.Channel, reqs <-chan *ssh.Request) {
-			defer func() {
-				log.Println("🔚 Cerrando canal SSH")
-				ch.Close()
-			}()
+		go handleChannelRequests(channel, requests)
+	}
+}
 
-			for req := range reqs {
-				log.Printf("📦 Request: tipo=%s, payload=%x", req.Type, req.Payload)
+func handleChannelRequests(ch ssh.Channel, reqs <-chan *ssh.Request) {
+	defer func() {
+		log.Println("🔚 Cerrando canal SSH")
+		if err := ch.Close(); err != nil {
+			log.Printf("⚠️ Error al cerrar canal: %v", err)
+		}
+	}()
 
-				switch req.Type {
-				case "exec":
-					var args struct{ Command string }
-					ssh.Unmarshal(req.Payload, &args)
-					if args.Command == "axorun" {
-						decoder := json.NewDecoder(channel)
-						var payload model.NamespaceConfig
-						if err := decoder.Decode(&payload); err != nil {
-							log.Printf("❌ Error decodificando payload: %v", err)
-							req.Reply(false, nil)
-							return
-						}
-						log.Printf("🚀 Ejecutando comando con configuración: %+v", payload)
+	for req := range reqs {
+		log.Printf("📦 Request: tipo=%s, payload=%x", req.Type, req.Payload)
 
-						// Confirmar que se recibió correctamente
-						req.Reply(true, nil)
-
-						// Simulación: ejecutar proceso
-						ch.Write([]byte("Axolotl ejecutando...\n"))
-						time.Sleep(1 * time.Second)
-						ch.Write([]byte("✅ Listo\n"))
-
-						// Cerrar después de responder
-						return
-					}
-				default:
-					req.Reply(false, nil)
-				}
+		switch req.Type {
+		case "exec":
+			if handleExecRequest(ch, req) {
+				return
 			}
-		}(channel, requests)
+		default:
+			if err := req.Reply(false, nil); err != nil {
+				log.Printf("⚠️ Error al responder request: %v", err)
+			}
+		}
+	}
+}
+
+func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
+	var args struct{ Command string }
+	if err := ssh.Unmarshal(req.Payload, &args); err != nil {
+		log.Printf("❌ Error al decodificar comando exec: %v", err)
+		if err := req.Reply(false, nil); err != nil {
+			log.Printf("⚠️ Error al responder: %v", err)
+		}
+		return false
+	}
+
+	switch args.Command {
+	case string(command.AxoRun):
+		return handleAxorunCommand(ch, req)
+	default:
+		log.Printf("⚠️ Comando desconocido: %s", args.Command)
+		if err := req.Reply(false, nil); err != nil {
+			log.Printf("⚠️ Error al responder: %v", err)
+		}
+		return false
 	}
 }
