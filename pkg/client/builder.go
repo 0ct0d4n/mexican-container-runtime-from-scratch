@@ -26,11 +26,3 @@ func NewClient(rootfs string, command []string, namespace *model.NamespaceConfig
 func NewRunRequest(rootfs string, command []string, namespace *model.NamespaceConfig) *RunRequest {
 	return &RunRequest{Rootfs: rootfs, Command: command, Namespace: namespace}
 }
-
-func NewCgroup(memory, cpu, pids int64) model.CgroupNamespace {
-	return model.CgroupNamespace{
-		MemoryMax: memory,
-		CPUMax:    cpu,
-		PidsMax:   pids,
-	}
-}
