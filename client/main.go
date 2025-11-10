@@ -36,7 +36,7 @@ func main() {
 		},
 	}
 
-	c := axolotl.NewClient("", nil, &ns, session)
+	c := axolotl.NewClient(nil, &ns, session)
 	if err := c.Create(); err != nil {
 		log.Fatalf("Error creating container: %v", err)
 	}

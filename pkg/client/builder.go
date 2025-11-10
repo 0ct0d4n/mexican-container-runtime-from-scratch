@@ -10,13 +10,13 @@ type Client struct {
 	Session *ssh.Session
 }
 
-func NewClient(rootfs string, command []string, namespace *model.NamespaceConfig, Session *ssh.Session) *Client {
+func NewClient(command []string, namespace *model.NamespaceConfig, Session *ssh.Session) *Client {
 	return &Client{
-		Req:     NewRunRequest(rootfs, command, namespace),
+		Req:     NewRunRequest(command, namespace),
 		Session: Session,
 	}
 }
 
-func NewRunRequest(rootfs string, command []string, namespace *model.NamespaceConfig) *model.RunRequest {
-	return &model.RunRequest{Rootfs: rootfs, Command: command, Namespace: namespace}
+func NewRunRequest(command []string, namespace *model.NamespaceConfig) *model.RunRequest {
+	return &model.RunRequest{Command: command, Namespace: namespace}
 }
