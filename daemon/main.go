@@ -1,9 +1,9 @@
 package main
 
 import (
+	axolotl "axolotl/pkg/server"
 	"log"
 	"net"
-	"os/exec"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -41,36 +41,8 @@ func main() {
 			defer sshConn.Close()
 
 			go ssh.DiscardRequests(reqs)
-			handleConnection(chans)
+			axolotl.HandleConnection(chans)
 		}(tcpConn)
-	}
-}
-
-func handleConnection(chans <-chan ssh.NewChannel) {
-	for newChannel := range chans {
-		if newChannel.ChannelType() != "session" {
-			newChannel.Reject(ssh.UnknownChannelType, "solo sesiones")
-			continue
-		}
-
-		channel, requests, _ := newChannel.Accept()
-		go func() {
-			for req := range requests {
-				switch req.Type {
-				case "exec":
-					var payload struct{ Command string }
-					ssh.Unmarshal(req.Payload, &payload)
-
-					cmd := exec.Command("bash", "-c ", payload.Command)
-					cmd.Stdout = channel
-					cmd.Stderr = channel
-					cmd.Run()
-					channel.Close()
-				default:
-					req.Reply(false, nil)
-				}
-			}
-		}()
 	}
 }
 
