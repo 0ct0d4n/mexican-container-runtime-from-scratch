@@ -3,11 +3,8 @@ package server
 import (
 	"axolotl/pkg/model"
 	"encoding/json"
-	"fmt"
 	"golang.org/x/crypto/ssh"
 	"log"
-	"os"
-	"path/filepath"
 )
 
 func handleAxorunCommand(ch ssh.Channel, req *ssh.Request) bool {
@@ -35,23 +32,38 @@ func handleAxorunCommand(ch ssh.Channel, req *ssh.Request) bool {
 		return true
 	}
 
-	// creando cgroup
-	base := "/sys/fs/cgroup/"
-	path := filepath.Join(base, payload.Cgroup.Path)
-	memoryMaxPath := filepath.Join(path, "memory.max")
-	cpuMaxPath := filepath.Join(path, "cpu.max")
-	pidMaxPath := filepath.Join(path, "pids.max")
-
-	os.MkdirAll(path, 0755)
-	fmt.Printf("🦎 Creando cgroup en %s: Mem=%d, CPU=%d, PIDs=%d\n", path, payload.Cgroup.MemoryMax, payload.Cgroup.CPUMax, payload.Cgroup.PidsMax)
-
 	// configurando recursos
+	tmp, err := createCgroup(payload.Cgroup)
+	if err != nil {
+		log.Printf("❌ [CGROUP] No se pudo crear instancia: %v", err)
+		return false
+	}
+	log.Printf("🦎 [CGROUP] Iniciando configuración en %s", tmp.path)
+
+	// CPU
+	if err := tmp.writeCPUMax(); err != nil {
+		log.Printf("⚠️ [CGROUP] Error configurando CPU: %v", err)
+		return false
+	}
+
+	// Memoria
+	if err := tmp.writeMemoryMax(); err != nil {
+		log.Printf("⚠️ [CGROUP] Error configurando memoria: %v", err)
+		return false
+	}
+
+	// PIDs
+	if err := tmp.writePidsMax(); err != nil {
+		log.Printf("⚠️ [CGROUP] Error configurando PIDs: %v", err)
+		return false
+	}
 
 	if _, err := ch.Write([]byte("✅ Listo\n")); err != nil {
 		log.Printf("⚠️ Error al escribir en canal: %v", err)
 		return true
 	}
 
+	log.Println("✅ [CGROUP] Recursos configurados correctamente")
 	// Cerrar después de responder
 	return true
 }
