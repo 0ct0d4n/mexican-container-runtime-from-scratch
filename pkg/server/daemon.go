@@ -32,26 +32,29 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 
 				switch req.Type {
 				case "exec":
-					var payload model.RunRequest
-					if err := json.Unmarshal(req.Payload, &payload); err != nil {
-						log.Printf("❌ Error decodificando payload: %v", err)
-						req.Reply(false, nil)
+					var args struct{ Command string }
+					ssh.Unmarshal(req.Payload, &args)
+					if args.Command == "axorun" {
+						decoder := json.NewDecoder(channel)
+						var payload model.NamespaceConfig
+						if err := decoder.Decode(&payload); err != nil {
+							log.Printf("❌ Error decodificando payload: %v", err)
+							req.Reply(false, nil)
+							return
+						}
+						log.Printf("🚀 Ejecutando comando con configuración: %+v", payload)
+
+						// Confirmar que se recibió correctamente
+						req.Reply(true, nil)
+
+						// Simulación: ejecutar proceso
+						ch.Write([]byte("Axolotl ejecutando...\n"))
+						time.Sleep(1 * time.Second)
+						ch.Write([]byte("✅ Listo\n"))
+
+						// Cerrar después de responder
 						return
 					}
-
-					log.Printf("🚀 Ejecutando comando con configuración: %+v", payload)
-
-					// Confirmar que se recibió correctamente
-					req.Reply(true, nil)
-
-					// Simulación: ejecutar proceso
-					ch.Write([]byte("Axolotl ejecutando...\n"))
-					time.Sleep(1 * time.Second)
-					ch.Write([]byte("✅ Listo\n"))
-
-					// Cerrar después de responder
-					return
-
 				default:
 					req.Reply(false, nil)
 				}

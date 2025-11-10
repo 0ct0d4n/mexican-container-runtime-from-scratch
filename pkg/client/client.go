@@ -8,7 +8,7 @@ import (
 
 func (r *Client) Create() error {
 	data, _ := json.Marshal(r.Req)
-	return r.SendPayload(data, "exec")
+	return r.SendPayload(data, "axorun")
 }
 
 func (r *Client) SendPayload(data []byte, command string) error {
