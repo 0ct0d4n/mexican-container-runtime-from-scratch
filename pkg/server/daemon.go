@@ -16,6 +16,7 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 		channel, requests, _ := newChannel.Accept()
 		go func() {
 			for req := range requests {
+				log.Println("Received request:", string(req.Payload))
 				switch req.Type {
 				case "exec":
 					var payload model.NamespaceConfig

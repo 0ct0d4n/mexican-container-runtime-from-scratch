@@ -1,54 +1,80 @@
-# Makefile: build + upload + install usando sshpass (compatible con macOS/zsh)
-
+# === CONFIGURACIÓN ===
 BINARY_NAME = axod
-MAIN_FILE   = daemon/main.go
+TARGET_PATH = /usr/local/bin/$(BINARY_NAME)
+SERVICE_NAME = axod.service
 
 REMOTE_USER = axolotl
 REMOTE_HOST = 192.168.64.2
 REMOTE_PORT = 22
-REMOTE_PATH = /home/axolotl
-REMOTE_BIN  = /usr/local/bin
+SSHPASS ?= axolotl
 
-GOOS  = linux
+GOOS = linux
 GOARCH = arm64
-FLAGS = -ldflags="-s -w"
 
-# ----------------------
-# Targets
-# ----------------------
+# === TARGETS ===
 
-.PHONY: all build upload install deploy clean run
+.PHONY: all build upload install service start stop restart status deploy
 
-# build: compila el binario
+all: build
+
 build:
-	@echo "🏗️ Compilando $(BINARY_NAME) para $(GOOS)/$(GOARCH)..."
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(FLAGS) -o $(BINARY_NAME) $(MAIN_FILE)
+	@echo "⚙️ Compilando $(BINARY_NAME) para Linux/ARM64..."
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags="-s -w" -o $(BINARY_NAME) daemon/main.go
 	@echo "✅ Binario compilado: $(BINARY_NAME)"
 
-# upload: usa sshpass para scp el binario (requiere SSHPASS en entorno)
-upload: build
-ifndef SSHPASS
-	$(error ❌ SSHPASS no definido. Ejecuta: SSHPASS='TuPassword' make upload)
-endif
-	@echo "📦 Transfiriendo $(BINARY_NAME) a $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_PATH)..."
-	@env SSHPASS=$(SSHPASS) sshpass -p $$SSHPASS scp -o StrictHostKeyChecking=no -P $(REMOTE_PORT) $(BINARY_NAME) $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_PATH)/
+upload:
+	@echo "📤 Transfiriendo $(BINARY_NAME) a $(REMOTE_USER)@$(REMOTE_HOST)..."
+	@sshpass -p "$(SSHPASS)" scp -P $(REMOTE_PORT) $(BINARY_NAME) $(REMOTE_USER)@$(REMOTE_HOST):/home/$(REMOTE_USER)/
 	@echo "✅ Transferencia completada."
 
-# install: mueve el binario a /usr/local/bin (requiere sudo remoto)
-install: upload
-	@echo "⚙️ Instalando $(BINARY_NAME) en $(REMOTE_BIN)..."
-	@sshpass -p $(SSHPASS) ssh -o StrictHostKeyChecking=no -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) \
-		"echo $(SSHPASS) | sudo -S mv $(REMOTE_PATH)/$(BINARY_NAME) $(REMOTE_BIN)/ && echo $(SSHPASS) | sudo -S chmod +x $(REMOTE_BIN)/$(BINARY_NAME)"
+install:
+	@echo "⚙️ Instalando $(BINARY_NAME) en $(TARGET_PATH)..."
+	@sshpass -p "$(SSHPASS)" ssh -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) "\
+		echo '$(SSHPASS)' | sudo -S mv /home/$(REMOTE_USER)/$(BINARY_NAME) $(TARGET_PATH) && \
+		echo '$(SSHPASS)' | sudo -S chmod +x $(TARGET_PATH)"
 	@echo "✅ Instalación completada."
-# deploy: build + upload + install
-deploy: install run
-	@echo "🚀 ¡$(BINARY_NAME) desplegado correctamente en $(REMOTE_HOST)!"
 
-run:
-	@echo "🚀 Ejecutando axod en modo interactivo..."
-	@sshpass -p $(SSHPASS) ssh -o StrictHostKeyChecking=no -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) "axod"
-# clean: elimina binario local
-clean:
-	@echo "🧹 Limpiando binarios locales..."
-	-rm -f $(BINARY_NAME)
-	@echo "✅ Limpieza completada."
+service:
+	@echo "🪄 Creando servicio systemd en $(REMOTE_HOST)..."
+	@sshpass -p "$(SSHPASS)" ssh -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) "\
+		echo '$(SSHPASS)' | sudo -S bash -c '\
+			printf \"%s\n\" \
+			\"[Unit]\" \
+			\"Description=Axolotl SSH Daemon\" \
+			\"After=network.target\" \
+			\"\" \
+			\"[Service]\" \
+			\"ExecStart=$(TARGET_PATH)\" \
+			\"Restart=always\" \
+			\"RestartSec=5\" \
+			\"User=$(REMOTE_USER)\" \
+			\"WorkingDirectory=/home/$(REMOTE_USER)\" \
+			\"StandardOutput=journal\" \
+			\"StandardError=journal\" \
+			\"\" \
+			\"[Install]\" \
+			\"WantedBy=multi-user.target\" \
+			> /etc/systemd/system/$(SERVICE_NAME)'; \
+		echo '$(SSHPASS)' | sudo -S systemctl daemon-reload && \
+		echo '$(SSHPASS)' | sudo -S systemctl enable $(SERVICE_NAME)"
+	@echo "✅ Servicio systemd configurado."
+
+start:
+	@echo "🚀 Iniciando servicio..."
+	@sshpass -p "$(SSHPASS)" ssh -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) "echo '$(SSHPASS)' | sudo -S systemctl start $(SERVICE_NAME)"
+	@echo "✅ Servicio iniciado."
+
+stop:
+	@echo "🛑 Deteniendo servicio..."
+	@sshpass -p "$(SSHPASS)" ssh -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) "echo '$(SSHPASS)' | sudo -S systemctl stop $(SERVICE_NAME)"
+	@echo "✅ Servicio detenido."
+
+restart:
+	@echo "♻️ Reiniciando servicio..."
+	@sshpass -p "$(SSHPASS)" ssh -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) "echo '$(SSHPASS)' | sudo -S systemctl restart $(SERVICE_NAME)"
+	@echo "✅ Servicio reiniciado."
+
+status:
+	@sshpass -p "$(SSHPASS)" ssh -p $(REMOTE_PORT) $(REMOTE_USER)@$(REMOTE_HOST) "echo '$(SSHPASS)' | sudo -S systemctl status $(SERVICE_NAME) --no-pager"
+
+deploy: build upload install service restart status

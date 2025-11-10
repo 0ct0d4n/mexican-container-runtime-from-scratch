@@ -6,7 +6,7 @@ import (
 
 func (r *Client) Create() error {
 	data, _ := json.Marshal(r.Req)
-	return r.SendPayload(data, "create")
+	return r.SendPayload(data, "exec")
 }
 
 func (r *Client) SendPayload(data []byte, command string) error {
@@ -21,10 +21,10 @@ func (r *Client) SendPayload(data []byte, command string) error {
 		return err
 	}
 
-	err = r.Session.Run(command)
-	if err != nil {
-		return err
-	}
+	//err = r.Session.Run(command)
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
