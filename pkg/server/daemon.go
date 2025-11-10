@@ -59,7 +59,7 @@ func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 
 	switch args.Command {
 	case string(command.AxoRun):
-		return handleAxorunCommand(ch, req)
+		return handleAxoRunCommand(ch, req)
 	default:
 		log.Printf("⚠️ Comando desconocido: %s", args.Command)
 		if err := req.Reply(false, nil); err != nil {

@@ -3,19 +3,15 @@ package server
 import (
 	"axolotl/pkg/model"
 	"encoding/json"
+	"errors"
 	"golang.org/x/crypto/ssh"
 	"log"
 )
 
-func handleAxorunCommand(ch ssh.Channel, req *ssh.Request) bool {
-	decoder := json.NewDecoder(ch)
-	var payload model.NamespaceConfig
-
-	if err := decoder.Decode(&payload); err != nil {
-		log.Printf("❌ Error decodificando payload: %v", err)
-		if err := req.Reply(false, nil); err != nil {
-			log.Printf("⚠️ Error al responder: %v", err)
-		}
+func handleAxoRunCommand(ch ssh.Channel, req *ssh.Request) bool {
+	payload, err := decodePayload(ch, req)
+	if err != nil {
+		log.Printf("⚠️ Error: %v", err)
 		return true
 	}
 
@@ -66,4 +62,18 @@ func handleAxorunCommand(ch ssh.Channel, req *ssh.Request) bool {
 	log.Println("✅ [CGROUP] Recursos configurados correctamente")
 	// Cerrar después de responder
 	return true
+}
+
+func decodePayload(ch ssh.Channel, req *ssh.Request) (model.NamespaceConfig, error) {
+	decoder := json.NewDecoder(ch)
+	var payload model.NamespaceConfig
+
+	if err := decoder.Decode(&payload); err != nil {
+		log.Printf("❌ Error decodificando payload: %v", err)
+		if err := req.Reply(false, nil); err != nil {
+			log.Printf("⚠️ Error al responder: %v", err)
+		}
+		return model.NamespaceConfig{}, errors.New("Error al decodificando payload")
+	}
+	return payload, nil
 }
