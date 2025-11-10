@@ -65,5 +65,5 @@ type NamespaceConfig struct {
 
 type RunRequest struct {
 	Command   []string         `json:"command,omitempty"`
-	Namespace *NamespaceConfig `json:"cgroup,omitempty"`
+	Namespace *NamespaceConfig `json:"namespaces,omitempty"`
 }
