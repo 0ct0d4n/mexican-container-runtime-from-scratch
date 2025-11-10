@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"log"
 )
 
 func (r *Client) Create() error {
@@ -20,11 +21,11 @@ func (r *Client) SendPayload(data []byte, command string) error {
 	if err != nil {
 		return err
 	}
-
-	//err = r.Session.Run(command)
-	//if err != nil {
-	//	return err
-	//}
+	log.Println("Sending command:", command)
+	err = r.Session.Run(command)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
