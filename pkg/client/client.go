@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 )
 
@@ -11,20 +12,20 @@ func (r *Client) Create() error {
 }
 
 func (r *Client) SendPayload(data []byte, command string) error {
-	stdin, _ := r.Session.StdinPipe()
-	_, err := stdin.Write(data)
+	stdin, err := r.Session.StdinPipe()
 	if err != nil {
-		return err
+		return fmt.Errorf("stdin error: %w", err)
 	}
 
-	err = stdin.Close()
-	if err != nil {
-		return err
-	}
+	// ✅ Mandamos el JSON mientras se ejecuta el comando
+	go func() {
+		defer stdin.Close()
+		stdin.Write(data)
+	}()
+
 	log.Println("Sending command:", command)
-	err = r.Session.Run(command)
-	if err != nil {
-		return err
+	if err := r.Session.Run(command); err != nil {
+		return fmt.Errorf("run error: %w", err)
 	}
 
 	return nil
