@@ -64,7 +64,6 @@ type NamespaceConfig struct {
 }
 
 type RunRequest struct {
-	Rootfs    string           `json:"rootfs"`
-	Command   []string         `json:"command"`
-	Namespace *NamespaceConfig `json:"cgroup"`
+	Command   []string         `json:"command,omitempty"`
+	Namespace *NamespaceConfig `json:"cgroup,omitempty"`
 }
