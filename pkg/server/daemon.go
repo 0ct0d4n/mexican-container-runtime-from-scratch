@@ -2,6 +2,7 @@ package server
 
 import (
 	"axolotl/pkg/model"
+	"encoding/json"
 	"golang.org/x/crypto/ssh"
 	"log"
 	"time"
@@ -32,7 +33,7 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 				switch req.Type {
 				case "exec":
 					var payload model.NamespaceConfig
-					if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
+					if err := json.Unmarshal(req.Payload, &payload); err != nil {
 						log.Printf("❌ Error decodificando payload: %v", err)
 						req.Reply(false, nil)
 						return
