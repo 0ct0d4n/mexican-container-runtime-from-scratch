@@ -3,6 +3,7 @@ package server
 import (
 	"axolotl/pkg/model"
 	"golang.org/x/crypto/ssh"
+	"log"
 )
 
 func HandleConnection(chans <-chan ssh.NewChannel) {
@@ -22,7 +23,7 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 					if err != nil {
 						return
 					}
-
+					log.Println(payload)
 					//cmd := exec.Command("bash", "-c ", payload.Command)
 					//cmd.Stdout = channel
 					//cmd.Stderr = channel
