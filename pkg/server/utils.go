@@ -2,6 +2,7 @@ package server
 
 import (
 	"axolotl/pkg/model"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,29 @@ func RunningInsideSystemd() (bool, string) {
 
 	// si no pertenece a ningún slice "usual", es ejecución normal
 	return false, content
+}
+
+func EnsureDir(path string) error {
+	info, err := os.Stat(path)
+
+	if err == nil {
+		// El path existe: verificar que realmente sea un directorio
+		if !info.IsDir() {
+			return fmt.Errorf("❌ %s existe pero no es un directorio", path)
+		}
+		return nil
+	}
+
+	// Si no existe, lo creamos
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(path, 0755); err != nil {
+			return fmt.Errorf("❌ No se pudo crear directorio %s: %w", path, err)
+		}
+		return nil
+	}
+
+	// Otro error inesperado
+	return fmt.Errorf("❌ Error verificando %s: %w", path, err)
 }
 
 func BuildCgroupPath(cfg *model.CgroupNamespace) string {

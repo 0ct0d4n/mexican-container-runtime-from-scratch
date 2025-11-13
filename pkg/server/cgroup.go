@@ -23,9 +23,14 @@ func createCgroup(cfg *model.CgroupNamespace) (*TmpCgroup, error) {
 		return nil, fmt.Errorf("❌ [CGROUP] No se especificó ruta para el cgroup")
 	}
 
+	tmpPath := BuildCgroupPath(cfg)
+	if err := EnsureDir(tmpPath); err != nil {
+		return nil, err
+	}
+
 	// Devolver instancia temporal
 	return &TmpCgroup{
-		path:   BuildCgroupPath(cfg),
+		path:   tmpPath,
 		cgroup: cfg,
 	}, nil
 }
