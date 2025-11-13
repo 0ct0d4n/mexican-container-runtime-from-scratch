@@ -54,6 +54,7 @@ type TimeNamespace struct {
 type NamespaceConfig struct {
 	Org           string            `json:"org,omitempty"`
 	ContainerName string            `json:"container_name"`
+	ImageName     string            `json:"image_name,omitempty"`
 	UTS           *UTSNamespace     `json:"uts,omitempty"`
 	PID           *PIDNamespace     `json:"pid,omitempty"`
 	Network       *NetworkNamespace `json:"network,omitempty"`
