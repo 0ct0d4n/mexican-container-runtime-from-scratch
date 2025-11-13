@@ -42,7 +42,6 @@ func InstallImage(diskPath string, config *model.NamespaceConfig) (*RootFSInstal
 		log.Println("error detecting host distro config:", err)
 		return nil, errors.New("error detecting host distro config")
 	}
-	// bajar
 	installationPath := filepath.Join(diskPath, config.ImageName)
 	downloadName := filepath.Join(installationPath, FilenameFromURL(distroCfg.URL))
 	canonicalRootfsPath := filepath.Join(installationPath, "rootfs")
@@ -51,13 +50,11 @@ func InstallImage(diskPath string, config *model.NamespaceConfig) (*RootFSInstal
 		return nil, err
 	}
 
-	// desempacar
 	err = util.UntarRootFS(downloadName, canonicalRootfsPath)
 	if err != nil {
 		return nil, err
 	}
-	// montar
-	// otro mas
+
 	return &RootFSInstallationConfig{
 		InstallationPath:    installationPath,
 		Config:              &distroCfg,
@@ -68,19 +65,29 @@ func InstallImage(diskPath string, config *model.NamespaceConfig) (*RootFSInstal
 }
 
 func (c *RootFSInstallationConfig) Mount() {
-
-}
-func MountBasics(rootfs string) error {
-	mounts := []MountPoint{
-		{Src: "proc", Dst: filepath.Join(rootfs, "proc"), Fstype: "proc", Flags: 0},
-		{Src: "sysfs", Dst: filepath.Join(rootfs, "sys"), Fstype: "sysfs", Flags: 0},
-		{Src: "tmpfs", Dst: filepath.Join(rootfs, "tmp"), Fstype: "tmpfs", Flags: 0},
-		{Src: "dev", Dst: filepath.Join(rootfs, "dev"), Fstype: "devtmpfs", Flags: 0},
+	err := c.mountBasics()
+	if err != nil {
+		return
 	}
+	err = c.EnterChroot()
+	if err != nil {
+		return
+	}
+	err = c.ExecShell()
+	if err != nil {
+		return
+	}
+}
 
+func (c *RootFSInstallationConfig) mountBasics() error {
+	mounts := []MountPoint{
+		{Src: "proc", Dst: filepath.Join(c.CanonicalRootfsPath, "proc"), Fstype: "proc", Flags: 0},
+		{Src: "sysfs", Dst: filepath.Join(c.CanonicalRootfsPath, "sys"), Fstype: "sysfs", Flags: 0},
+		{Src: "tmpfs", Dst: filepath.Join(c.CanonicalRootfsPath, "tmp"), Fstype: "tmpfs", Flags: 0},
+		{Src: "dev", Dst: filepath.Join(c.CanonicalRootfsPath, "dev"), Fstype: "devtmpfs", Flags: 0},
+	}
 	for _, m := range mounts {
 		os.MkdirAll(m.Dst, 0755)
-
 		if err := unix.Mount(m.Src, m.Dst, m.Fstype, m.Flags, ""); err != nil {
 			return fmt.Errorf("failed mount %s at %s: %w", m.Src, m.Dst, err)
 		}
