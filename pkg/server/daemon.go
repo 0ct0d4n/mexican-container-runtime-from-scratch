@@ -70,16 +70,16 @@ func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 			return true
 		}
 
-		_, err = createCgroup(payload.Namespace)
+		err = StartContainer(err, payload)
 		if err != nil {
 			log.Printf("[CGROUP] Error: failed to create instance: %v", err)
 			ch.Write([]byte("error\n"))
 		} else {
+
 			ch.Write([]byte("ok\n"))
 		}
 
 		ch.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{0}))
-
 		return true
 
 	default:

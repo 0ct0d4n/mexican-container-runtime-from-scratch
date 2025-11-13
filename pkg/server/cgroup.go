@@ -42,7 +42,20 @@ func createCgroup(cfg *model.NamespaceConfig) (*TmpCgroup, error) {
 		cgroup: cfg.Cgroup,
 	}, nil
 }
-
+func (t *TmpCgroup) LimitResources() error {
+	err := t.writeMemoryMax()
+	if err != nil {
+		return err
+	}
+	err = t.writeCPUMax()
+	if err != nil {
+		return err
+	}
+	err = t.writePidsMax()
+	if err != nil {
+		return err
+	}
+}
 func (t *TmpCgroup) writeMemoryMax() error {
 
 	if t.cgroup.MemoryMax <= 0 {

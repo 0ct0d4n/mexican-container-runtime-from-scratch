@@ -24,7 +24,6 @@ type MountPoint struct {
 	Data   string
 }
 
-// /var/axolotl/images/
 type RootFSInstallationConfig struct {
 	InstallationPath    string
 	DownloadName        string
@@ -69,11 +68,11 @@ func (c *RootFSInstallationConfig) Mount() {
 	if err != nil {
 		return
 	}
-	err = c.EnterChroot()
+	err = c.enterChroot()
 	if err != nil {
 		return
 	}
-	err = c.ExecShell()
+	err = c.execShell()
 	if err != nil {
 		return
 	}
@@ -94,13 +93,13 @@ func (c *RootFSInstallationConfig) mountBasics() error {
 	}
 	return nil
 }
-func (c *RootFSInstallationConfig) EnterChroot() error {
+func (c *RootFSInstallationConfig) enterChroot() error {
 	if err := syscall.Chroot(c.CanonicalRootfsPath); err != nil {
 		return fmt.Errorf("error en chroot: %w", err)
 	}
 	return os.Chdir("/")
 }
 
-func (c *RootFSInstallationConfig) ExecShell() error {
+func (c *RootFSInstallationConfig) execShell() error {
 	return syscall.Exec("/bin/sh", []string{"/bin/sh"}, os.Environ())
 }
