@@ -25,7 +25,7 @@ func handleAxoRunCommand(ch ssh.Channel, req *ssh.Request) bool {
 	}
 
 	// 2️⃣ Antes de aceptar el exec request, LEER el JSON DESDE STDIN (ch)
-	payload, err := decodePayloadFromChannel(ch)
+	runRequest, err := decodePayloadFromChannel(ch)
 	if err != nil {
 		log.Printf("❌ Error leyendo payload JSON: %v", err)
 		_ = sendMessage(ch, "❌ Payload inválido\n")
@@ -33,7 +33,15 @@ func handleAxoRunCommand(ch ssh.Channel, req *ssh.Request) bool {
 		return true
 	}
 
-	log.Printf("📦 Payload decodificado: %+v", payload)
+	if runRequest.Namespace == nil {
+		log.Printf("❌ Error: namespace config es nil en el request")
+		_ = sendMessage(ch, "❌ Configuración de namespace vacía\n")
+		_ = req.Reply(false, nil)
+		return true
+	}
+
+	payload := runRequest.Namespace
+	log.Printf("📦 Payload decodificado correctamente: %+v", payload)
 
 	// 3️⃣ Aceptar el request exec AHORA
 	if err := req.Reply(true, nil); err != nil {
@@ -82,17 +90,19 @@ func handleAxoRunCommand(ch ssh.Channel, req *ssh.Request) bool {
 
 // -----------------------------------------------------------------------------
 // ✔️ Lee el JSON desde EL CANAL (stdin del cliente)
+// El cliente envía un RunRequest completo con el campo "namespaces"
 // -----------------------------------------------------------------------------
-func decodePayloadFromChannel(ch ssh.Channel) (model.NamespaceConfig, error) {
-	var payload model.NamespaceConfig
+func decodePayloadFromChannel(ch ssh.Channel) (*model.RunRequest, error) {
+	var runRequest model.RunRequest
 
 	decoder := json.NewDecoder(ch)
-	if err := decoder.Decode(&payload); err != nil {
+	if err := decoder.Decode(&runRequest); err != nil {
 		log.Printf("❌ Error leyendo JSON desde stdin: %v", err)
-		return model.NamespaceConfig{}, err
+		return nil, err
 	}
 
-	return payload, nil
+	log.Printf("🔍 RunRequest raw: Command=%v, Namespace=%+v", runRequest.Command, runRequest.Namespace)
+	return &runRequest, nil
 }
 
 // -----------------------------------------------------------------------------
