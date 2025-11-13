@@ -22,7 +22,7 @@ func main() {
 		keyFile       = flag.String("key", "", "Path to private key file (default: from env)")
 		insecure      = flag.Bool("insecure", false, "Skip host key verification (INSECURE)")
 		timeout       = flag.Duration("timeout", 0, "Connection timeout (default: from env or 30s)")
-		containerName = flag.String("name", "test-container", "Container name")
+		containerName = flag.String("container", "alpine", "Container name")
 		memoryMB      = flag.Int64("memory", 100, "Memory limit in MB")
 		cpuPercent    = flag.Float64("cpu", 0.5, "CPU limit (0.0-1.0)")
 		maxPids       = flag.Uint64("pids", 100, "Maximum number of PIDs")
@@ -132,4 +132,4 @@ func main() {
 //
 // Or with command line flags:
 //
-// ./client -host 192.168.64.2 -user axolotl -password axolotl -insecure -memory 200 -cpu 0.8
+// ./client -host 192.168.64.2 -user axolotl -password axolotl -insecure -memory 200 -cpu 0.8 -container alpine
