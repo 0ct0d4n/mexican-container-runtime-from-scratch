@@ -10,13 +10,13 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 	for newChannel := range chans {
 
 		if newChannel.ChannelType() != "session" {
-			newChannel.Reject(ssh.UnknownChannelType, "solo sesiones")
+			newChannel.Reject(ssh.UnknownChannelType, "only sessions allowed")
 			continue
 		}
 
 		channel, requests, err := newChannel.Accept()
 		if err != nil {
-			log.Printf("❌ Error aceptando canal SSH: %v", err)
+			log.Printf("Error: failed to accept SSH channel: %v", err)
 			continue
 		}
 
@@ -27,14 +27,14 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 func handleChannelRequests(ch ssh.Channel, reqs <-chan *ssh.Request) {
 
 	for req := range reqs {
-		log.Printf("📦 Request recibido: tipo=%s payload=%x", req.Type, req.Payload)
+		log.Printf("Request received: type=%s payload=%x", req.Type, req.Payload)
 
 		switch req.Type {
 
 		case "exec":
-			// Si handleExecRequest devuelve true, salimos
+			// If handleExecRequest returns true, we exit
 			if handleExecRequest(ch, req) {
-				log.Println("🔚 Canal completado, cerrando...")
+				log.Println("Channel completed, closing...")
 				_ = ch.Close()
 				return
 			}
@@ -48,22 +48,22 @@ func handleChannelRequests(ch ssh.Channel, reqs <-chan *ssh.Request) {
 func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 	var args struct{ Command string }
 
-	// 1️⃣ leer el comando del exec request (AXO_RUN)
+	// Read the command from the exec request
 	if err := ssh.Unmarshal(req.Payload, &args); err != nil {
-		log.Printf("❌ Error decodificando comando exec: %v", err)
+		log.Printf("Error: failed to decode exec command: %v", err)
 		_ = req.Reply(false, nil)
 		return false
 	}
 
-	log.Printf("🚀 Exec command recibido: %s", args.Command)
+	log.Printf("Exec command received: %s", args.Command)
 
 	switch args.Command {
 
-	case string(command.AxoRun): // ← CORRECTO
+	case string(command.AxoRun):
 		return handleAxoRunCommand(ch, req)
 
 	default:
-		log.Printf("⚠️ Comando desconocido: %s", args.Command)
+		log.Printf("Warning: unknown command: %s", args.Command)
 		_ = req.Reply(false, nil)
 		return false
 	}

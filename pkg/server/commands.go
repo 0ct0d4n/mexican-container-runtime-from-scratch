@@ -8,23 +8,9 @@ import (
 )
 
 func handleAxoRunCommand(ch ssh.Channel, req *ssh.Request) bool {
-	log.Println("[AXO_RUN] Exec request received")
+	log.Println("[AXO_RUN] Handler started")
 
-	// First validate that the command is AXO_RUN
-	var args struct{ Command string }
-	if err := ssh.Unmarshal(req.Payload, &args); err != nil {
-		log.Printf("Error: failed to read exec payload: %v", err)
-		_ = req.Reply(false, nil)
-		return true
-	}
-
-	if args.Command != "AXO_RUN" {
-		log.Printf("Error: unrecognized command: %s", args.Command)
-		_ = req.Reply(false, nil)
-		return true
-	}
-
-	// Before accepting the exec request, read the JSON from STDIN (channel)
+	// Read the JSON payload from STDIN (channel)
 	runRequest, err := decodePayloadFromChannel(ch)
 	if err != nil {
 		log.Printf("Error: failed to read JSON payload: %v", err)
