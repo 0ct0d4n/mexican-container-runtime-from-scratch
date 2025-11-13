@@ -48,7 +48,7 @@ service:
 			\"Restart=always\" \
 			\"RestartSec=5\" \
 			\"User=root\" \
-			\"Delegate=yes\" \
+			\"Delegate=cpu cpuset io memory pids\" \
 			\"CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_OVERRIDE CAP_CHOWN\" \
 			\"AmbientCapabilities=CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_OVERRIDE CAP_CHOWN\" \
 			\"WorkingDirectory=/home/$(REMOTE_USER)\" \

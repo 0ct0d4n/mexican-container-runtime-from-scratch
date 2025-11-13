@@ -32,10 +32,11 @@ func createCgroup(cfg *model.NamespaceConfig) (*TmpCgroup, error) {
 	}
 
 	tmpPath := BuildCgroupPath(cfg)
+	log.Printf("[CGROUP] Creating cgroup at %s", tmpPath)
 	if err := EnsureDir(tmpPath); err != nil {
 		return nil, err
 	}
-	log.Printf("[CGROUP] Creating cgroup at %s", tmpPath)
+	log.Printf("[CGROUP] Created successfully at %s", tmpPath)
 	// Devolver instancia temporal
 	return &TmpCgroup{
 		path:   tmpPath,

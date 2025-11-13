@@ -49,7 +49,11 @@ func EnsureDir(path string) error {
 }
 
 func BuildCgroupPath(cfg *model.NamespaceConfig) string {
-	return filepath.Join(CgroupSysPathNS, cfg.Org, cfg.ContainerName, cfg.Cgroup.Path)
+	isSystemd, c := RunningInsideSystemd()
+	if !isSystemd {
+		return filepath.Join(CgroupSysPathNS, cfg.Org, cfg.ContainerName, cfg.Cgroup.Path)
+	}
+	return filepath.Join(CgroupSysPath, c, cfg.Org, cfg.ContainerName, cfg.Cgroup.Path)
 }
 
 func CurrentSlice() string {
