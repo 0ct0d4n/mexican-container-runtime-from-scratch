@@ -59,20 +59,17 @@ func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 	switch args.Command {
 
 	case "AXO_RUN":
-		// 2️⃣ Informar al cliente que aceptamos el comando
 		if err := req.Reply(true, nil); err != nil {
 			log.Printf("Error replying to exec request: %v", err)
 			return true
 		}
 
-		// 3️⃣ Leer JSON DESDE STDIN DEL CANAL
 		payload, err := decodePayloadFromChannel(ch)
 		if err != nil {
 			log.Printf("Error decoding payload: %v", err)
 			return true
 		}
 
-		// Create cgroup
 		_, err = createCgroup(payload.Namespace)
 		if err != nil {
 			log.Printf("[CGROUP] Error: failed to create instance: %v", err)
@@ -81,7 +78,6 @@ func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 			ch.Write([]byte("ok\n"))
 		}
 
-		// 5️⃣ Mandar exit-status para que el cliente no se cuelgue
 		ch.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{0}))
 
 		return true

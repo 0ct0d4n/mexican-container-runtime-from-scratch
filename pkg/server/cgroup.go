@@ -44,13 +44,12 @@ func createCgroup(cfg *model.NamespaceConfig) (*TmpCgroup, error) {
 }
 
 func (t *TmpCgroup) writeMemoryMax() error {
-	memoryMaxPath := filepath.Join(t.path, "memory.max")
 
 	if t.cgroup.MemoryMax <= 0 {
 		fmt.Println("🦎 [MEM] Sin límite configurado, omitiendo memory.max")
 		return nil
 	}
-
+	memoryMaxPath := filepath.Join(t.path, "memory.max")
 	data := fmt.Sprintf("%d", t.cgroup.MemoryMax)
 
 	if err := os.WriteFile(memoryMaxPath, []byte(data), 0644); err != nil {
