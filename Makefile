@@ -48,6 +48,8 @@ service:
 			\"Restart=always\" \
 			\"RestartSec=5\" \
 			\"User=$(REMOTE_USER)\" \
+			\"CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_OVERRIDE CAP_CHOWN\" \
+			\"AmbientCapabilities=CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_OVERRIDE CAP_CHOWN\" \
 			\"WorkingDirectory=/home/$(REMOTE_USER)\" \
 			\"StandardOutput=journal\" \
 			\"StandardError=journal\" \
