@@ -8,109 +8,105 @@ import (
 )
 
 func handleAxoRunCommand(ch ssh.Channel, req *ssh.Request) bool {
-	log.Println("🦎 [AXO_RUN] Exec request recibido")
+	log.Println("[AXO_RUN] Exec request received")
 
-	// 1️⃣ Primero validar que el comando es AXO_RUN
+	// First validate that the command is AXO_RUN
 	var args struct{ Command string }
 	if err := ssh.Unmarshal(req.Payload, &args); err != nil {
-		log.Printf("❌ No se pudo leer exec payload: %v", err)
+		log.Printf("Error: failed to read exec payload: %v", err)
 		_ = req.Reply(false, nil)
 		return true
 	}
 
 	if args.Command != "AXO_RUN" {
-		log.Printf("❌ Comando no reconocido: %s", args.Command)
+		log.Printf("Error: unrecognized command: %s", args.Command)
 		_ = req.Reply(false, nil)
 		return true
 	}
 
-	// 2️⃣ Antes de aceptar el exec request, LEER el JSON DESDE STDIN (ch)
+	// Before accepting the exec request, read the JSON from STDIN (channel)
 	runRequest, err := decodePayloadFromChannel(ch)
 	if err != nil {
-		log.Printf("❌ Error leyendo payload JSON: %v", err)
-		_ = sendMessage(ch, "❌ Payload inválido\n")
+		log.Printf("Error: failed to read JSON payload: %v", err)
+		_ = sendMessage(ch, "Error: invalid payload\n")
 		_ = req.Reply(false, nil)
 		return true
 	}
 
 	if runRequest.Namespace == nil {
-		log.Printf("❌ Error: namespace config es nil en el request")
-		_ = sendMessage(ch, "❌ Configuración de namespace vacía\n")
+		log.Printf("Error: namespace config is nil in request")
+		_ = sendMessage(ch, "Error: empty namespace configuration\n")
 		_ = req.Reply(false, nil)
 		return true
 	}
 
 	payload := runRequest.Namespace
-	log.Printf("📦 Payload decodificado correctamente: %+v", payload)
+	log.Printf("Payload decoded successfully: %+v", payload)
 
-	// 3️⃣ Aceptar el request exec AHORA
+	// Accept the exec request now
 	if err := req.Reply(true, nil); err != nil {
-		log.Printf("⚠️ Error respondiendo a exec-request: %v", err)
+		log.Printf("Error: failed to reply to exec-request: %v", err)
 		return true
 	}
 
-	// 4️⃣ Respuesta al cliente
-	_ = sendMessage(ch, "🦎 Procesando configuración...\n")
+	// Send response to client
+	_ = sendMessage(ch, "Processing configuration...\n")
 
-	// 5️⃣ Crear cgroup
+	// Create cgroup
 	tmp, err := createCgroup(payload.Cgroup)
 	if err != nil {
-		log.Printf("❌ [CGROUP] No se pudo crear instancia: %v", err)
-		_ = sendMessage(ch, "❌ [CGROUP] No se pudo crear instancia\n")
+		log.Printf("[CGROUP] Error: failed to create instance: %v", err)
+		_ = sendMessage(ch, "[CGROUP] Error: failed to create instance\n")
 		return true
 	}
-	log.Printf("🦎 [CGROUP] Iniciando configuración en %s", tmp.path)
+	log.Printf("[CGROUP] Starting configuration at %s", tmp.path)
 
 	// CPU
 	if err := tmp.writeCPUMax(); err != nil {
-		log.Printf("⚠️ [CGROUP] Error configurando CPU: %v", err)
-		_ = sendMessage(ch, "❌ [CGROUP] Error configurando CPU\n")
+		log.Printf("[CGROUP] Error: failed to configure CPU: %v", err)
+		_ = sendMessage(ch, "[CGROUP] Error: failed to configure CPU\n")
 		return true
 	}
 
-	// Memoria
+	// Memory
 	if err := tmp.writeMemoryMax(); err != nil {
-		log.Printf("⚠️ [CGROUP] Error configurando memoria: %v", err)
-		_ = sendMessage(ch, "❌ [CGROUP] Error configurando memoria\n")
+		log.Printf("[CGROUP] Error: failed to configure memory: %v", err)
+		_ = sendMessage(ch, "[CGROUP] Error: failed to configure memory\n")
 		return true
 	}
 
 	// PIDs
 	if err := tmp.writePidsMax(); err != nil {
-		log.Printf("⚠️ [CGROUP] Error configurando PIDs: %v", err)
-		_ = sendMessage(ch, "❌ [CGROUP] Error configurando PIDs\n")
+		log.Printf("[CGROUP] Error: failed to configure PIDs: %v", err)
+		_ = sendMessage(ch, "[CGROUP] Error: failed to configure PIDs\n")
 		return true
 	}
 
-	_ = sendMessage(ch, "✅ Configuración completada exitosamente\n")
-	log.Println("✅ [CGROUP] Recursos configurados correctamente")
+	_ = sendMessage(ch, "Configuration completed successfully\n")
+	log.Println("[CGROUP] Resources configured successfully")
 
 	return true
 }
 
-// -----------------------------------------------------------------------------
-// ✔️ Lee el JSON desde EL CANAL (stdin del cliente)
-// El cliente envía un RunRequest completo con el campo "namespaces"
-// -----------------------------------------------------------------------------
+// decodePayloadFromChannel reads the JSON from the SSH channel (stdin from client).
+// The client sends a complete RunRequest with the "namespaces" field.
 func decodePayloadFromChannel(ch ssh.Channel) (*model.RunRequest, error) {
 	var runRequest model.RunRequest
 
 	decoder := json.NewDecoder(ch)
 	if err := decoder.Decode(&runRequest); err != nil {
-		log.Printf("❌ Error leyendo JSON desde stdin: %v", err)
+		log.Printf("Error: failed to read JSON from stdin: %v", err)
 		return nil, err
 	}
 
-	log.Printf("🔍 RunRequest raw: Command=%v, Namespace=%+v", runRequest.Command, runRequest.Namespace)
+	log.Printf("RunRequest decoded: Command=%v, Namespace=%+v", runRequest.Command, runRequest.Namespace)
 	return &runRequest, nil
 }
 
-// -----------------------------------------------------------------------------
-// ✔️ Escribe mensajes en el canal SSH
-// -----------------------------------------------------------------------------
+// sendMessage writes a message to the SSH channel.
 func sendMessage(ch ssh.Channel, msg string) error {
 	if _, err := ch.Write([]byte(msg)); err != nil {
-		log.Printf("⚠️ Error al escribir en canal SSH: %v", err)
+		log.Printf("Error: failed to write to SSH channel: %v", err)
 		return err
 	}
 	return nil
