@@ -27,13 +27,13 @@ const (
 	OPENSUSE DistroType = "OPENSUSE"
 )
 
-type ShebangPurpose string
+type OSCfgPurpose string
 
 const (
-	PurposeShell          ShebangPurpose = "SHELL"
-	PurposeReleaseInfo    ShebangPurpose = "RELEASE_INFO"
-	PurposeInitBinary     ShebangPurpose = "INIT_BINARY"
-	PurposeSystemMetadata ShebangPurpose = "SYSTEM_METADATA"
+	PurposeShell          OSCfgPurpose = "SHELL"
+	PurposeReleaseInfo    OSCfgPurpose = "RELEASE_INFO"
+	PurposeInitBinary     OSCfgPurpose = "INIT_BINARY"
+	PurposeSystemMetadata OSCfgPurpose = "SYSTEM_METADATA"
 )
 
 //
@@ -45,7 +45,7 @@ const (
 type RootFSEntry struct {
 	Path     string
 	Checksum string
-	Purpose  ShebangPurpose
+	Purpose  OSCfgPurpose
 }
 
 type RootFSConfig struct {
