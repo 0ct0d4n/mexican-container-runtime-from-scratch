@@ -357,7 +357,6 @@ func ResolveRootFS(distro DistroType, arch string) (RootFSConfig, error) {
 	return cfg, nil
 }
 
-// Helper: devuelve las arquitecturas disponibles para una distro
 func availableArchs(distro DistroType) []string {
 	archs := []string{}
 	m := RootfsCatalog[distro]
