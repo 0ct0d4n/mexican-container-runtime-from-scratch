@@ -8,6 +8,7 @@ import (
 
 func HandleConnection(chans <-chan ssh.NewChannel) {
 	for newChannel := range chans {
+
 		if newChannel.ChannelType() != "session" {
 			newChannel.Reject(ssh.UnknownChannelType, "solo sesiones")
 			continue
@@ -15,7 +16,7 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 
 		channel, requests, err := newChannel.Accept()
 		if err != nil {
-			log.Printf("❌ Error al aceptar canal: %v", err)
+			log.Printf("❌ Error aceptando canal SSH: %v", err)
 			continue
 		}
 
@@ -24,47 +25,46 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 }
 
 func handleChannelRequests(ch ssh.Channel, reqs <-chan *ssh.Request) {
-	defer func() {
-		log.Println("🔚 Cerrando canal SSH")
-		if err := ch.Close(); err != nil {
-			log.Printf("⚠️ Error al cerrar canal: %v", err)
-		}
-	}()
 
 	for req := range reqs {
-		log.Printf("📦 Request: tipo=%s, payload=%x", req.Type, req.Payload)
+		log.Printf("📦 Request recibido: tipo=%s payload=%x", req.Type, req.Payload)
 
 		switch req.Type {
+
 		case "exec":
+			// Si handleExecRequest devuelve true, salimos
 			if handleExecRequest(ch, req) {
+				log.Println("🔚 Canal completado, cerrando...")
+				_ = ch.Close()
 				return
 			}
+
 		default:
-			if err := req.Reply(false, nil); err != nil {
-				log.Printf("⚠️ Error al responder request: %v", err)
-			}
+			req.Reply(false, nil)
 		}
 	}
 }
 
 func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 	var args struct{ Command string }
+
+	// 1️⃣ leer el comando del exec request (AXO_RUN)
 	if err := ssh.Unmarshal(req.Payload, &args); err != nil {
-		log.Printf("❌ Error al decodificar comando exec: %v", err)
-		if err := req.Reply(false, nil); err != nil {
-			log.Printf("⚠️ Error al responder: %v", err)
-		}
+		log.Printf("❌ Error decodificando comando exec: %v", err)
+		_ = req.Reply(false, nil)
 		return false
 	}
 
+	log.Printf("🚀 Exec command recibido: %s", args.Command)
+
 	switch args.Command {
-	case string(command.AxoRun):
+
+	case string(command.AxoRun): // ← CORRECTO
 		return handleAxoRunCommand(ch, req)
+
 	default:
 		log.Printf("⚠️ Comando desconocido: %s", args.Command)
-		if err := req.Reply(false, nil); err != nil {
-			log.Printf("⚠️ Error al responder: %v", err)
-		}
+		_ = req.Reply(false, nil)
 		return false
 	}
 }
