@@ -9,19 +9,26 @@ import (
 )
 
 const CgroupSysPath = "/sys/fs/cgroup/"
+const CgroupSysPathNS = CgroupSysPath + "axolotl"
 
 type TmpCgroup struct {
 	path   string
 	cgroup *model.CgroupNamespace
 }
 
-func createCgroup(cfg *model.CgroupNamespace) (*TmpCgroup, error) {
+func createCgroup(cfg *model.NamespaceConfig) (*TmpCgroup, error) {
 	// Validación de entrada
 	if cfg == nil {
 		return nil, fmt.Errorf("❌ [CGROUP] Configuración nula")
 	}
-	if cfg.Path == "" {
+	if cfg.Cgroup.Path == "" {
 		return nil, fmt.Errorf("❌ [CGROUP] No se especificó ruta para el cgroup")
+	}
+	if cfg.Org == "" {
+		return nil, fmt.Errorf("❌ [CGROUP] No se especificó Org para el cgroup")
+	}
+	if cfg.ContainerName == "" {
+		return nil, fmt.Errorf("❌ [CGROUP] No se especificó ContainerName para el cgroup")
 	}
 
 	tmpPath := BuildCgroupPath(cfg)
@@ -32,7 +39,7 @@ func createCgroup(cfg *model.CgroupNamespace) (*TmpCgroup, error) {
 	// Devolver instancia temporal
 	return &TmpCgroup{
 		path:   tmpPath,
-		cgroup: cfg,
+		cgroup: cfg.Cgroup,
 	}, nil
 }
 

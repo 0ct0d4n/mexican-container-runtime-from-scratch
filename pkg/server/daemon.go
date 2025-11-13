@@ -73,7 +73,7 @@ func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 		}
 
 		// Create cgroup
-		_, err = createCgroup(payload.Namespace.Cgroup)
+		_, err = createCgroup(payload.Namespace)
 		if err != nil {
 			log.Printf("[CGROUP] Error: failed to create instance: %v", err)
 			ch.Write([]byte("error\n"))
