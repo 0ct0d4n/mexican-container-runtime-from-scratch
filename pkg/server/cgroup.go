@@ -3,6 +3,7 @@ package server
 import (
 	"axolotl/pkg/model"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -27,7 +28,7 @@ func createCgroup(cfg *model.CgroupNamespace) (*TmpCgroup, error) {
 	if err := EnsureDir(tmpPath); err != nil {
 		return nil, err
 	}
-
+	log.Printf("[CGROUP] Creating cgroup at %s", tmpPath)
 	// Devolver instancia temporal
 	return &TmpCgroup{
 		path:   tmpPath,
