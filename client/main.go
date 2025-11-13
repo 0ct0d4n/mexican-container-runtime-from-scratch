@@ -92,6 +92,7 @@ func main() {
 	// Build request using the builder pattern
 	request, err := axolotl.NewRequestBuilder().
 		WithContainerName(*containerName).
+		WithOrg("global").
 		WithCgroup(*cgroupPath, *memoryMB, *cpuPercent, *maxPids).
 		Build()
 	if err != nil {

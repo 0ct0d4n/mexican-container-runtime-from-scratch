@@ -11,6 +11,7 @@ import (
 type RequestBuilder struct {
 	command       []string
 	containerName string
+	org           string
 	cgroup        *model.CgroupNamespace
 	uts           *model.UTSNamespace
 	pid           *model.PIDNamespace
@@ -35,6 +36,12 @@ func (b *RequestBuilder) WithCommand(cmd []string) *RequestBuilder {
 // WithContainerName sets the container name.
 func (b *RequestBuilder) WithContainerName(name string) *RequestBuilder {
 	b.containerName = name
+	return b
+}
+
+// WithContainerName sets the container name.
+func (b *RequestBuilder) WithOrg(name string) *RequestBuilder {
+	b.org = name
 	return b
 }
 
@@ -122,6 +129,7 @@ func (b *RequestBuilder) Build() (*model.RunRequest, error) {
 	// Build namespace config
 	namespace := &model.NamespaceConfig{
 		ContainerName: b.containerName,
+		Org:           b.org,
 		Cgroup:        b.cgroup,
 		UTS:           b.uts,
 		PID:           b.pid,
