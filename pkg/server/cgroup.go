@@ -55,7 +55,9 @@ func (t *TmpCgroup) LimitResources() error {
 	if err != nil {
 		return err
 	}
+	return nil
 }
+
 func (t *TmpCgroup) writeMemoryMax() error {
 
 	if t.cgroup.MemoryMax <= 0 {
