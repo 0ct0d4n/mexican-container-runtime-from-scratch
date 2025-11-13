@@ -23,21 +23,9 @@ func createCgroup(cfg *model.CgroupNamespace) (*TmpCgroup, error) {
 		return nil, fmt.Errorf("❌ [CGROUP] No se especificó ruta para el cgroup")
 	}
 
-	// Construir ruta absoluta del cgroup
-	path := filepath.Join(CgroupSysPath, cfg.Path)
-
-	// Crear directorio (recursivo)
-	if err := os.MkdirAll(path, 0755); err != nil {
-		return nil, fmt.Errorf("❌ [CGROUP] Error creando %s: %w", path, err)
-	}
-
-	// Confirmación visual
-	fmt.Printf("🦎 [CGROUP] Creado en %s → MEM=%d bytes, CPU=%.2f, PIDS=%d\n",
-		path, cfg.MemoryMax, cfg.CPUMax, cfg.PidsMax)
-
 	// Devolver instancia temporal
 	return &TmpCgroup{
-		path:   path,
+		path:   BuildCgroupPath(cfg),
 		cgroup: cfg,
 	}, nil
 }
