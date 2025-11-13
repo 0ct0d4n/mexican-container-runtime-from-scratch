@@ -1,7 +1,6 @@
 package server
 
 import (
-	"axolotl/pkg/command"
 	"golang.org/x/crypto/ssh"
 	"log"
 )
@@ -48,23 +47,48 @@ func handleChannelRequests(ch ssh.Channel, reqs <-chan *ssh.Request) {
 func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 	var args struct{ Command string }
 
-	// Read the command from the exec request
+	// 1️⃣ Leer solo el comando SSH ("AXO_RUN")
 	if err := ssh.Unmarshal(req.Payload, &args); err != nil {
-		log.Printf("Error: failed to decode exec command: %v", err)
+		log.Printf("Error unmarshalling exec command: %v", err)
 		_ = req.Reply(false, nil)
-		return false
+		return true
 	}
 
 	log.Printf("Exec command received: %s", args.Command)
 
 	switch args.Command {
 
-	case string(command.AxoRun):
-		return handleAxoRunCommand(ch, req)
+	case "AXO_RUN":
+		// 2️⃣ Informar al cliente que aceptamos el comando
+		if err := req.Reply(true, nil); err != nil {
+			log.Printf("Error replying to exec request: %v", err)
+			return true
+		}
+
+		// 3️⃣ Leer JSON DESDE STDIN DEL CANAL
+		payload, err := decodePayloadFromChannel(ch)
+		if err != nil {
+			log.Printf("Error decoding payload: %v", err)
+			return true
+		}
+
+		// Create cgroup
+		_, err = createCgroup(payload.Namespace.Cgroup)
+		if err != nil {
+			log.Printf("[CGROUP] Error: failed to create instance: %v", err)
+			ch.Write([]byte("error\n"))
+		} else {
+			ch.Write([]byte("ok\n"))
+		}
+
+		// 5️⃣ Mandar exit-status para que el cliente no se cuelgue
+		ch.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{0}))
+
+		return true
 
 	default:
-		log.Printf("Warning: unknown command: %s", args.Command)
+		log.Printf("Unknown command: %s", args.Command)
 		_ = req.Reply(false, nil)
-		return false
+		return true
 	}
 }

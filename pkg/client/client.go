@@ -91,24 +91,20 @@ func (c *Client) execute(ctx context.Context, cmd command.AxoCommand, payload []
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 	c.mu.Unlock()
-
 	defer session.Close()
 
-	// Setup stdout and stderr capture
+	// Capture stdout & stderr
 	var stdout, stderr bytes.Buffer
 	session.Stdout = &stdout
 	session.Stderr = &stderr
 
-	// Get stdin pipe to send payload
+	// Stdin pipe
 	stdin, err := session.StdinPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stdin pipe: %w", err)
 	}
 
-	// Channel to track stdin write completion
-	stdinDone := make(chan error, 1)
-
-	// Start the command
+	// IMPORTANT: start command BEFORE writing JSON
 	cmdString := string(cmd)
 	log.Printf("Executing command: %s", cmdString)
 
@@ -116,67 +112,48 @@ func (c *Client) execute(ctx context.Context, cmd command.AxoCommand, payload []
 		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
-	// Write payload to stdin in a goroutine
+	// Write JSON payload
 	go func() {
 		defer stdin.Close()
 		if len(payload) > 0 {
-			if _, err := stdin.Write(payload); err != nil {
-				stdinDone <- fmt.Errorf("failed to write payload: %w", err)
-				return
+			_, err := stdin.Write(payload)
+			if err != nil {
+				log.Printf("ERROR writing to stdin: %v", err)
 			}
 		}
-		stdinDone <- nil
 	}()
 
-	// Wait for command completion with context support
+	// Context-aware Wait()
 	sessionDone := make(chan error, 1)
 	go func() {
 		sessionDone <- session.Wait()
 	}()
 
-	// Wait for either context cancellation or command completion
-	var sessionErr error
 	select {
 	case <-ctx.Done():
-		// Context cancelled, try to signal the session
 		_ = session.Signal(ssh.SIGTERM)
-		// Wait a bit for graceful termination
-		select {
-		case sessionErr = <-sessionDone:
-		case <-make(chan struct{}):
-			_ = session.Signal(ssh.SIGKILL)
-			sessionErr = <-sessionDone
-		}
+		<-sessionDone
 		return nil, fmt.Errorf("command cancelled: %w", ctx.Err())
 
-	case sessionErr = <-sessionDone:
-		// Command completed
+	case sessionErr := <-sessionDone:
+		// Build response
+		response := &Response{
+			Stdout:  stdout.String(),
+			Stderr:  stderr.String(),
+			Success: sessionErr == nil,
+		}
+
+		if exitErr, ok := sessionErr.(*ssh.ExitError); ok {
+			response.ExitCode = exitErr.ExitStatus()
+		} else if sessionErr == nil {
+			response.ExitCode = 0
+		} else {
+			response.ExitCode = -1
+		}
+
+		log.Printf("Command completed: exit_code=%d, success=%t", response.ExitCode, response.Success)
+		return response, nil
 	}
-
-	// Check stdin write result
-	if err := <-stdinDone; err != nil {
-		return nil, err
-	}
-
-	// Prepare response
-	response := &Response{
-		Stdout:  stdout.String(),
-		Stderr:  stderr.String(),
-		Success: sessionErr == nil,
-	}
-
-	// Extract exit code if available
-	if exitErr, ok := sessionErr.(*ssh.ExitError); ok {
-		response.ExitCode = exitErr.ExitStatus()
-	} else if sessionErr == nil {
-		response.ExitCode = 0
-	} else {
-		response.ExitCode = -1
-	}
-
-	log.Printf("Command completed: exit_code=%d, success=%t", response.ExitCode, response.Success)
-
-	return response, nil
 }
 
 // Ping checks if the connection to the server is alive.
