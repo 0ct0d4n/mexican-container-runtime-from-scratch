@@ -68,8 +68,8 @@ func CleanupMounts(c *RootFSInstallationConfig) {
 	log.Println("about to unmount points for ", c.CanonicalRootfsPath)
 	dirs := GetMountPoint(c)
 	for _, d := range dirs {
-		syscall.Unmount(d.Src, 0)
-		syscall.Unmount(d.Src, syscall.MNT_DETACH)
+		syscall.Unmount(d.Dst, 0)
+		syscall.Unmount(d.Dst, syscall.MNT_DETACH)
 	}
 }
 
