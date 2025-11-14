@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"syscall"
 )
 
 const DefaultImagesPath = "/var/axolotl/images/"
@@ -28,8 +29,19 @@ func StartContainer(err error, payload *model.RunRequest) error {
 	if err != nil {
 		return err
 	}
-	style.SuccessfulActionF("Image installed successfully, about to create the child process: ", image)
+	style.SuccessfulActionF("Image installed successfully, about to spawn child process: ", image)
+	return spawnProcess(err, image)
+}
+
+func spawnProcess(err error, image *rootfs.RootFSInstallationConfig) error {
 	cmd := exec.Command("/proc/self/exe", "init-container")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: syscall.CLONE_NEWNS |
+			syscall.CLONE_NEWPID |
+			syscall.CLONE_NEWUTS |
+			syscall.CLONE_NEWIPC |
+			syscall.CLONE_NEWNET,
+	}
 	stdin, _ := cmd.StdinPipe()
 	go func() {
 		json.NewEncoder(stdin).Encode(image)
