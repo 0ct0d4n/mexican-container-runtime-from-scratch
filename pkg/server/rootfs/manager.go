@@ -65,19 +65,20 @@ func InstallImage(diskPath string, config *model.NamespaceConfig) (*RootFSInstal
 	}, nil
 }
 
-func (c *RootFSInstallationConfig) Mount() {
+func (c *RootFSInstallationConfig) Mount() error {
 	err := c.mountBasics()
 	if err != nil {
-		return
+		return err
 	}
 	err = c.enterChroot()
 	if err != nil {
-		return
+		return err
 	}
 	err = c.execShell()
 	if err != nil {
-		return
+		return err
 	}
+	return nil
 }
 
 func (c *RootFSInstallationConfig) mountBasics() error {
