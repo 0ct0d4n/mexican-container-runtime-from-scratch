@@ -46,6 +46,7 @@ service:
 			\"[Service]\" \
 			\"ExecStart=$(TARGET_PATH)\" \
 			\"Restart=always\" \
+			\"Slice=axolotl.slice\" \
 			\"RestartSec=5\" \
 			\"User=root\" \
 			\"Delegate=cpu cpuset io memory pids\" \
