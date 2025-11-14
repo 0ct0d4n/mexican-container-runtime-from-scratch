@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/DanyelMorales/style"
 	"log"
+	"os"
 	"os/exec"
 )
 
@@ -35,6 +36,8 @@ func StartContainer(err error, payload *model.RunRequest) error {
 		stdin.Close()
 	}()
 
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err = cmd.Start()
 	if err != nil {
 		return err

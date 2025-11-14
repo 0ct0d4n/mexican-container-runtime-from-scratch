@@ -13,12 +13,13 @@ import (
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "init-container" {
+		log.Println("Running init-container")
 		// Run the container initialization sequence
 		if err := runContainerInit(); err != nil {
 			fmt.Println("❌ init-container failed:", err)
 			os.Exit(1)
 		}
-
+		log.Println("init-container started")
 		// If runContainerInit() does execve(), we never return here.
 		return
 	}
