@@ -64,6 +64,14 @@ func InstallImage(diskPath string, config *model.NamespaceConfig) (*RootFSInstal
 		CanonicalRootfsPath: canonicalRootfsPath,
 	}, nil
 }
+func CleanupMounts(c *RootFSInstallationConfig) {
+	log.Println("about to unmount points for ", c.CanonicalRootfsPath)
+	dirs := GetMountPoint(c)
+	for _, d := range dirs {
+		syscall.Unmount(d.Src, 0)
+		syscall.Unmount(d.Src, syscall.MNT_DETACH)
+	}
+}
 
 func (c *RootFSInstallationConfig) Mount() error {
 	err := c.mountBasics()
@@ -82,12 +90,7 @@ func (c *RootFSInstallationConfig) Mount() error {
 }
 
 func (c *RootFSInstallationConfig) mountBasics() error {
-	mounts := []MountPoint{
-		{Src: "proc", Dst: filepath.Join(c.CanonicalRootfsPath, "proc"), Fstype: "proc", Flags: 0},
-		{Src: "sysfs", Dst: filepath.Join(c.CanonicalRootfsPath, "sys"), Fstype: "sysfs", Flags: 0},
-		{Src: "tmpfs", Dst: filepath.Join(c.CanonicalRootfsPath, "tmp"), Fstype: "tmpfs", Flags: 0},
-		{Src: "dev", Dst: filepath.Join(c.CanonicalRootfsPath, "dev"), Fstype: "devtmpfs", Flags: 0},
-	}
+	mounts := GetMountPoint(c)
 	for _, m := range mounts {
 		os.MkdirAll(m.Dst, 0755)
 		if err := unix.Mount(m.Src, m.Dst, m.Fstype, m.Flags, ""); err != nil {
@@ -96,6 +99,17 @@ func (c *RootFSInstallationConfig) mountBasics() error {
 	}
 	return nil
 }
+
+func GetMountPoint(c *RootFSInstallationConfig) []MountPoint {
+	mounts := []MountPoint{
+		{Src: "proc", Dst: filepath.Join(c.CanonicalRootfsPath, "proc"), Fstype: "proc", Flags: 0},
+		{Src: "sysfs", Dst: filepath.Join(c.CanonicalRootfsPath, "sys"), Fstype: "sysfs", Flags: 0},
+		{Src: "tmpfs", Dst: filepath.Join(c.CanonicalRootfsPath, "tmp"), Fstype: "tmpfs", Flags: 0},
+		{Src: "dev", Dst: filepath.Join(c.CanonicalRootfsPath, "dev"), Fstype: "devtmpfs", Flags: 0},
+	}
+	return mounts
+}
+
 func (c *RootFSInstallationConfig) enterChroot() error {
 	if err := syscall.Chroot(c.CanonicalRootfsPath); err != nil {
 		return fmt.Errorf("error en chroot: %w", err)

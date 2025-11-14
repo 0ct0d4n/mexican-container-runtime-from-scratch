@@ -29,6 +29,7 @@ func StartContainer(err error, payload *model.RunRequest) error {
 	if err != nil {
 		return err
 	}
+	rootfs.CleanupMounts(image)
 	style.SuccessfulActionF("Image installed successfully, about to spawn child process: ", image)
 	return spawnProcess(err, image)
 }
