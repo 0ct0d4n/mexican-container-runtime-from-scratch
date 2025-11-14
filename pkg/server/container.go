@@ -3,6 +3,7 @@ package server
 import (
 	"axolotl/pkg/model"
 	"axolotl/pkg/server/rootfs"
+	"github.com/DanyelMorales/style"
 	"log"
 )
 
@@ -24,6 +25,6 @@ func StartContainer(err error, payload *model.RunRequest) error {
 	if err != nil {
 		return err
 	}
-	image.Mount()
-	return nil
+	style.SuccessfulActionF("Operation completed successfully %v", image)
+	return image.Mount()
 }

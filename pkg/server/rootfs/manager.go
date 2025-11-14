@@ -82,6 +82,17 @@ func (c *RootFSInstallationConfig) Mount() error {
 }
 
 func (c *RootFSInstallationConfig) mountBasics() error {
+
+	// 1. Unshare mount namespace (igual que Docker)
+	if err := unix.Unshare(unix.CLONE_NEWNS); err != nil {
+		return fmt.Errorf("failed to unshare mount namespace: %w", err)
+	}
+
+	// 2. Make it private (prevent mount events from propagating to host)
+	if err := unix.Mount("", "/", "", unix.MS_REC|unix.MS_PRIVATE, ""); err != nil {
+		return fmt.Errorf("failed to set mount propagation: %w", err)
+	}
+
 	mounts := []MountPoint{
 		{Src: "proc", Dst: filepath.Join(c.CanonicalRootfsPath, "proc"), Fstype: "proc", Flags: 0},
 		{Src: "sysfs", Dst: filepath.Join(c.CanonicalRootfsPath, "sys"), Fstype: "sysfs", Flags: 0},
