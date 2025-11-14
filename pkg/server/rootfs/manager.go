@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 )
 import "axolotl/pkg/util/rootfs"
@@ -36,7 +37,8 @@ func InstallImage(diskPath string, config *model.NamespaceConfig) (*RootFSInstal
 	var distroCfg rootfs.RootFSConfig
 	var err error
 
-	distroType := rootfs.DistroType(config.ImageName)
+	log.Println("about to resolve distro instance for ", config.ImageName)
+	distroType := rootfs.DistroType(strings.ToUpper(config.ImageName))
 	if distroCfg, err = rootfs.DetectHostDistroConfig(distroType); err != nil {
 		log.Println("error detecting host distro config:", err)
 		return nil, errors.New("error detecting host distro config")
