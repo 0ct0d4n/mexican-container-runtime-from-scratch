@@ -3,8 +3,10 @@ package server
 import (
 	"axolotl/pkg/model"
 	"axolotl/pkg/server/rootfs"
+	"encoding/json"
 	"github.com/DanyelMorales/style"
 	"log"
+	"os/exec"
 )
 
 const DefaultImagesPath = "/var/axolotl/images/"
@@ -25,6 +27,17 @@ func StartContainer(err error, payload *model.RunRequest) error {
 	if err != nil {
 		return err
 	}
-	style.SuccessfulActionF("Operation completed successfully %v", image)
-	return image.Mount()
+	style.SuccessfulActionF("Image installed successfully, about to create the child process: ", image)
+	cmd := exec.Command("/proc/self/exe", "init-container")
+	stdin, _ := cmd.StdinPipe()
+	go func() {
+		json.NewEncoder(stdin).Encode(image)
+		stdin.Close()
+	}()
+
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	return cmd.Wait()
 }
