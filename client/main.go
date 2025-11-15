@@ -96,7 +96,7 @@ func main() {
 		WithContainerName(*containerName).
 		WithOrg("global").
 		WithImage(*imageName).
-		WithCommand([]model.Commands{model.Commands{
+		WithCommand([]model.Commands{{
 			Command: "/bin/sh",
 			Args:    []string{"/bin/sh", "-c", "echo CONTAINER_IS_WORKING_NOW!; "},
 		}}).
