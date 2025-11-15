@@ -95,6 +95,7 @@ func main() {
 		WithContainerName(*containerName).
 		WithOrg("global").
 		WithImage(*imageName).
+		WithCommand([]string{"/bin/sh"}).
 		WithCgroup(*cgroupPath, *memoryMB, *cpuPercent, *maxPids).
 		Build()
 	if err != nil {
