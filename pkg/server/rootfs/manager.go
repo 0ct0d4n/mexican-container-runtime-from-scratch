@@ -86,7 +86,7 @@ func (c *RootFSInstallationConfig) Mount() error {
 	if err != nil {
 		return err
 	}
-	err = c.enterChroot()
+	err = c.pivotRoot()
 	if err != nil {
 		return err
 	}
@@ -126,13 +126,43 @@ func GetMountPoint(c *RootFSInstallationConfig) []MountPoint {
 	return mounts
 }
 
+// @deprecated it's unsecure please do not use.
 func (c *RootFSInstallationConfig) enterChroot() error {
 	if err := syscall.Chroot(c.CanonicalRootfsPath); err != nil {
 		return fmt.Errorf("error en chroot: %w %v", err, c.CanonicalRootfsPath)
 	}
 	return os.Chdir("/")
 }
+func (c *RootFSInstallationConfig) pivotRoot() error {
+	rootfs := c.CanonicalRootfsPath
 
+	if err := unix.Mount(rootfs, rootfs, "", unix.MS_BIND|unix.MS_REC, ""); err != nil {
+		return fmt.Errorf("pivot_root: failed to bind-mount rootfs on itself (%s): %w", rootfs, err)
+	}
+
+	putOld := filepath.Join(rootfs, ".pivot_root_old")
+	if err := os.MkdirAll(putOld, 0700); err != nil {
+		return fmt.Errorf("pivot_root: failed to create putOld dir %s: %w", putOld, err)
+	}
+
+	if err := unix.PivotRoot(rootfs, putOld); err != nil {
+		return fmt.Errorf("pivot_root: unix.PivotRoot(%s, %s) failed: %w", rootfs, putOld, err)
+	}
+
+	if err := os.Chdir("/"); err != nil {
+		return fmt.Errorf("pivot_root: failed to chdir(\"/\"): %w", err)
+	}
+
+	oldRoot := "/.pivot_root_old"
+	if err := unix.Unmount(oldRoot, unix.MNT_DETACH); err != nil {
+		return fmt.Errorf("pivot_root: failed to unmount old root (%s): %w", oldRoot, err)
+	}
+	if err := os.RemoveAll(oldRoot); err != nil {
+		return fmt.Errorf("pivot_root: failed to remove old root dir (%s): %w", oldRoot, err)
+	}
+
+	return nil
+}
 func (c *RootFSInstallationConfig) execShell() error {
 	//return syscall.Exec("/bin/sh", []string{"/bin/sh"}, os.Environ())
 	log.Println("Container mounted successfully :D enjoy! current PID=", os.Getpid())
