@@ -6,6 +6,7 @@ package rootfs
 import (
 	"axolotl/pkg/model"
 	"axolotl/pkg/util"
+	"axolotl/pkg/util/tini"
 	"errors"
 	"fmt"
 	"golang.org/x/sys/unix"
@@ -88,7 +89,8 @@ func (c *RootFSInstallationConfig) Mount() error {
 		return err
 	}
 	go c.reapZombies()
-	return c.execShell()
+	log.Println("Container mounted successfully :D enjoy! current PID=", os.Getpid())
+	return tini.StartMainProcess("/bin/sh")
 }
 
 func (c *RootFSInstallationConfig) mountBasics() error {
