@@ -99,6 +99,7 @@ func (c *RootFSInstallationConfig) Mount() error {
 	if err != nil {
 		return err
 	}
+	log.Println("Container mounted successfully :D enjoy!")
 	return nil
 }
 
