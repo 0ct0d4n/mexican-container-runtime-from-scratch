@@ -25,7 +25,7 @@ func StartContainer(err error, payload *model.RunRequest) error {
 		return err
 	}
 
-	image, err := rootfs.InstallImage(DefaultImagesPath, payload.Namespace)
+	image, err := rootfs.InstallImage(DefaultImagesPath, payload.Namespace, payload.Command)
 	if err != nil {
 		return err
 	}

@@ -36,7 +36,7 @@ type RootFSInstallationConfig struct {
 	Commands            []string
 }
 
-func InstallImage(diskPath string, config *model.NamespaceConfig) (*RootFSInstallationConfig, error) {
+func InstallImage(diskPath string, config *model.NamespaceConfig, command ...string) (*RootFSInstallationConfig, error) {
 	var distroCfg rootfs.RootFSConfig
 	var err error
 
@@ -65,6 +65,7 @@ func InstallImage(diskPath string, config *model.NamespaceConfig) (*RootFSInstal
 		DownloadName:        downloadName,
 		Distro:              distroType,
 		CanonicalRootfsPath: canonicalRootfsPath,
+		Commands:            command,
 	}, nil
 }
 func CleanupMounts(c *RootFSInstallationConfig) {
