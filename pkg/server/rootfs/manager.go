@@ -135,5 +135,5 @@ func (c *RootFSInstallationConfig) enterChroot() error {
 }
 
 func (c *RootFSInstallationConfig) execShell() error {
-	return syscall.Exec("/bin/sh", []string{"/bin/sh", "-c", "echo CONTAINER_IS_WORKING_NOW!; ls /"}, os.Environ())
+	return syscall.Exec("/bin/sh", []string{"/bin/sh", "-c", "echo CONTAINER_IS_WORKING_NOW!; "}, os.Environ())
 }
