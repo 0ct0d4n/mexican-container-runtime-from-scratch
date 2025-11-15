@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 import "axolotl/pkg/util/rootfs"
 
@@ -95,12 +96,8 @@ func (c *RootFSInstallationConfig) Mount() error {
 	if err != nil {
 		return err
 	}
-	err = c.execShell()
-	if err != nil {
-		return err
-	}
-	log.Println("Container mounted successfully :D enjoy!")
-	return nil
+	go c.reapZombies()
+	return c.execShell()
 }
 
 func (c *RootFSInstallationConfig) mountBasics() error {
@@ -136,6 +133,25 @@ func (c *RootFSInstallationConfig) enterChroot() error {
 
 func (c *RootFSInstallationConfig) execShell() error {
 	//return syscall.Exec("/bin/sh", []string{"/bin/sh"}, os.Environ())
-	log.Println("INIT PID:", os.Getpid())
+	log.Println("Container mounted successfully :D enjoy! current PID=", os.Getpid())
 	return syscall.Exec("/bin/sh", []string{"/bin/sh", "-c", "echo CONTAINER_IS_WORKING_NOW!; "}, os.Environ())
+}
+
+func (c *RootFSInstallationConfig) reapZombies() {
+	for {
+		var status syscall.WaitStatus
+		var rusage syscall.Rusage
+
+		pid, err := syscall.Wait4(-1, &status, syscall.WNOHANG, &rusage)
+		if pid > 0 {
+			log.Printf("[INIT] Reaped zombie pid=%d status=%d", pid, status.ExitStatus())
+			continue
+		}
+
+		if err != nil && !errors.Is(err, syscall.ECHILD) {
+			log.Printf("[INIT] wait4 error: %v", err)
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
 }
