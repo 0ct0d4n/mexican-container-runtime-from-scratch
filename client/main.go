@@ -98,6 +98,9 @@ func main() {
 		WithImage(*imageName).
 		WithCommand([]model.Commands{{
 			Command: "/bin/sh",
+			Args:    []string{"-c", "echo HELLO_WORLD_FROM_AXOLOTL!; "},
+		}, {
+			Command: "/bin/sh",
 			Args:    []string{"-c", "echo CONTAINER_IS_WORKING_NOW!; "},
 		}}).
 		WithCgroup(*cgroupPath, *memoryMB, *cpuPercent, *maxPids).
