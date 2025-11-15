@@ -36,7 +36,7 @@ type RootFSInstallationConfig struct {
 	Commands            []string
 }
 
-func InstallImage(diskPath string, config *model.NamespaceConfig, command ...string) (*RootFSInstallationConfig, error) {
+func InstallImage(diskPath string, config *model.NamespaceConfig, command []string) (*RootFSInstallationConfig, error) {
 	var distroCfg rootfs.RootFSConfig
 	var err error
 
