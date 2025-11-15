@@ -45,14 +45,24 @@ service:
 			\"\" \
 			\"[Service]\" \
 			\"ExecStart=$(TARGET_PATH)\" \
-			\"Restart=always\" \
-			\"Slice=axolotl.slice\" \
-			\"RestartSec=5\" \
 			\"User=root\" \
-			\"Delegate=cpu cpuset io memory pids\" \
-			\"CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_OVERRIDE CAP_CHOWN\" \
-			\"AmbientCapabilities=CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_OVERRIDE CAP_CHOWN\" \
 			\"WorkingDirectory=/home/$(REMOTE_USER)\" \
+			\"Restart=always\" \
+			\"RestartSec=5\" \
+			\"Slice=axolotl.slice\" \
+			\"\" \
+			\"# === Namespaces + Mount permissions ===\" \
+			\"Delegate=yes\" \
+			\"Delegate=cpu cpuset io memory pids\" \
+			\"PrivateTmp=false\" \
+			\"ProtectSystem=false\" \
+			\"ProtectHome=false\" \
+			\"NoNewPrivileges=false\" \
+			\"\" \
+			\"# === Capabilities necesarias para namespaces, chroot, mounts ===\" \
+			\"CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SYS_CHROOT CAP_SYS_PTRACE CAP_DAC_OVERRIDE CAP_CHOWN CAP_NET_ADMIN\" \
+			\"AmbientCapabilities=CAP_SYS_ADMIN CAP_SYS_CHROOT CAP_SYS_PTRACE CAP_DAC_OVERRIDE CAP_CHOWN CAP_NET_ADMIN\" \
+			\"\" \
 			\"StandardOutput=journal\" \
 			\"StandardError=journal\" \
 			\"\" \
