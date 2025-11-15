@@ -16,11 +16,10 @@ func main() {
 		log.Println("Running init-container")
 		// Run the container initialization sequence
 		if err := runContainerInit(); err != nil {
-			fmt.Println("❌ init-container failed:", err)
+			log.Println("❌ init-container failed:", err)
 			os.Exit(1)
 		}
 		log.Println("init-container started")
-		// If runContainerInit() does execve(), we never return here.
 		return
 	}
 
