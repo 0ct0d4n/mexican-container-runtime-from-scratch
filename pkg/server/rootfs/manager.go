@@ -75,15 +75,6 @@ func CleanupMounts(c *RootFSInstallationConfig) {
 }
 
 func (c *RootFSInstallationConfig) Mount() error {
-	if err := unix.Unshare(
-		unix.CLONE_NEWNS |
-			unix.CLONE_NEWPID |
-			unix.CLONE_NEWUTS |
-			unix.CLONE_NEWIPC,
-	); err != nil {
-		return fmt.Errorf("failed to unshare namespaces: %w", err)
-	}
-
 	if err := unix.Mount("", "/", "", unix.MS_REC|unix.MS_PRIVATE, ""); err != nil {
 		return fmt.Errorf("failed to set mount propagation: %w", err)
 	}
