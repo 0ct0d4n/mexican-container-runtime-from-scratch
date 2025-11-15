@@ -8,7 +8,7 @@ import (
 
 // RequestBuilder builds a RunRequest with validation.
 type RequestBuilder struct {
-	command       []string
+	command       []model.Commands
 	containerName string
 	image         string
 	org           string
@@ -28,7 +28,7 @@ func NewRequestBuilder() *RequestBuilder {
 }
 
 // WithCommand sets the command to execute.
-func (b *RequestBuilder) WithCommand(cmd []string) *RequestBuilder {
+func (b *RequestBuilder) WithCommand(cmd []model.Commands) *RequestBuilder {
 	b.command = cmd
 	return b
 }

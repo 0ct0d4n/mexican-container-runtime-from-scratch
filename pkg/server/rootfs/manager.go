@@ -33,10 +33,10 @@ type RootFSInstallationConfig struct {
 	Config              *rootfs.RootFSConfig
 	Distro              rootfs.DistroType
 	CanonicalRootfsPath string
-	Commands            []string
+	Commands            []model.Commands
 }
 
-func InstallImage(diskPath string, config *model.NamespaceConfig, command []string) (*RootFSInstallationConfig, error) {
+func InstallImage(diskPath string, config *model.NamespaceConfig, command []model.Commands) (*RootFSInstallationConfig, error) {
 	var distroCfg rootfs.RootFSConfig
 	var err error
 
@@ -94,7 +94,7 @@ func (c *RootFSInstallationConfig) Mount() error {
 	log.Println("Container mounted successfully :D enjoy! current PID=", os.Getpid())
 
 	for _, command := range c.Commands {
-		err := tini.StartMainProcess(command)
+		err := tini.StartMainProcess(command.Command, command.Args...)
 		if err != nil {
 			return err
 		}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"axolotl/pkg/model"
 	"context"
 	"flag"
 	"fmt"
@@ -95,7 +96,10 @@ func main() {
 		WithContainerName(*containerName).
 		WithOrg("global").
 		WithImage(*imageName).
-		WithCommand([]string{"/bin/sh"}).
+		WithCommand([]model.Commands{model.Commands{
+			Command: "/bin/sh",
+			Args:    []string{"/bin/sh", "-c", "echo CONTAINER_IS_WORKING_NOW!; "},
+		}}).
 		WithCgroup(*cgroupPath, *memoryMB, *cpuPercent, *maxPids).
 		Build()
 	if err != nil {
