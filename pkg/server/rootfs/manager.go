@@ -138,6 +138,7 @@ func (c *RootFSInstallationConfig) execShell() error {
 }
 
 func (c *RootFSInstallationConfig) reapZombies() {
+	log.Println("Reaping Zombies...")
 	for {
 		var status syscall.WaitStatus
 		var rusage syscall.Rusage
