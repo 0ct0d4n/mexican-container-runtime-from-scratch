@@ -96,13 +96,10 @@ func main() {
 		WithContainerName(*containerName).
 		WithOrg("global").
 		WithImage(*imageName).
-		WithCommand([]model.Commands{{
-			Command: "/bin/sh",
-			Args:    []string{"-c", "echo HELLO_WORLD_FROM_AXOLOTL!; "},
-		}, {
+		WithCommand(model.Commands{
 			Command: "/bin/sh",
 			Args:    []string{" /bin/busybox ls /.. ; "},
-		}}).
+		}).
 		WithCgroup(*cgroupPath, *memoryMB, *cpuPercent, *maxPids).
 		Build()
 	if err != nil {
