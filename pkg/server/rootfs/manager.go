@@ -33,10 +33,10 @@ type RootFSInstallationConfig struct {
 	Config              *rootfs.RootFSConfig
 	Distro              rootfs.DistroType
 	CanonicalRootfsPath string
-	Commands            []model.Commands
+	Commands            model.Commands
 }
 
-func InstallImage(diskPath string, config *model.NamespaceConfig, command []model.Commands) (*RootFSInstallationConfig, error) {
+func InstallImage(diskPath string, config *model.NamespaceConfig, command model.Commands) (*RootFSInstallationConfig, error) {
 	var distroCfg rootfs.RootFSConfig
 	var err error
 
@@ -76,20 +76,7 @@ func CleanupMounts(c *RootFSInstallationConfig) {
 		syscall.Unmount(d.Dst, syscall.MNT_DETACH)
 	}
 }
-func (c *RootFSInstallationConfig) BuildCombinedCommand() (string, error) {
-	if len(c.Commands) == 0 {
-		return "", fmt.Errorf("no commands provided")
-	}
 
-	parts := []string{}
-	for _, cmd := range c.Commands {
-		full := cmd.Command + " " + strings.Join(cmd.Args, " ")
-		parts = append(parts, full)
-	}
-
-	// unir en un solo comando
-	return strings.Join(parts, " && "), nil
-}
 func (c *RootFSInstallationConfig) Mount() error {
 	if err := unix.Mount("", "/", "", unix.MS_REC|unix.MS_PRIVATE, ""); err != nil {
 		return fmt.Errorf("failed to set mount propagation: %w", err)
@@ -106,11 +93,7 @@ func (c *RootFSInstallationConfig) Mount() error {
 	go c.reapZombies()
 	log.Println("Container mounted successfully :D enjoy! current PID=", os.Getpid())
 
-	if len(c.Commands) > 1 {
-		combined, _ := c.BuildCombinedCommand()
-		return tini.StartMainProcess("/bin/sh", "-c", combined)
-	}
-	return tini.StartMainProcess(c.Commands[0].Command, c.Commands[0].Args...)
+	return tini.StartMainProcess(c.Commands.Command, c.Commands.Args...)
 }
 
 func (c *RootFSInstallationConfig) mountBasics() error {
