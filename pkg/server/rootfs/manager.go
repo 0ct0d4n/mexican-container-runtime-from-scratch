@@ -86,7 +86,7 @@ func (c *RootFSInstallationConfig) Mount() error {
 	if err != nil {
 		return err
 	}
-	err = c.enterChroot()
+	err = c.pivotRoot()
 	if err != nil {
 		return err
 	}
