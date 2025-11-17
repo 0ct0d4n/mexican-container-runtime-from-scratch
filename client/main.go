@@ -98,7 +98,7 @@ func main() {
 		WithImage(*imageName).
 		WithCommand(model.Commands{
 			Command: "/bin/sh",
-			Args:    []string{" -c echo hello   "},
+			Args:    []string{"-c", " echo hello   "},
 		}).
 		WithCgroup(*cgroupPath, *memoryMB, *cpuPercent, *maxPids).
 		Build()
