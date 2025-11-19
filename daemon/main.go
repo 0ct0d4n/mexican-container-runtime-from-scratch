@@ -35,8 +35,6 @@ func runContainerInit() error {
 	if IsDebug() {
 		log.Println("Debug mode ON")
 		network.DebugNETNS()
-	} else {
-		log.Println("Debug mode OFF")
 	}
 	if err := image.Mount(); err != nil {
 		return err
