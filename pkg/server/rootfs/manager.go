@@ -28,6 +28,7 @@ type MountPoint struct {
 }
 
 type RootFSInstallationConfig struct {
+	Id                  string
 	InstallationPath    string
 	DownloadName        string
 	Config              *rootfs.RootFSConfig
@@ -60,6 +61,7 @@ func InstallImage(diskPath string, config *model.NamespaceConfig, command model.
 	}
 
 	return &RootFSInstallationConfig{
+		Id:                  config.ID,
 		InstallationPath:    installationPath,
 		Config:              &distroCfg,
 		DownloadName:        downloadName,
