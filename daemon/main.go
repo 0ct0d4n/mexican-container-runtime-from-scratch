@@ -2,6 +2,7 @@ package main
 
 import (
 	axolotl "axolotl/pkg/server"
+	"axolotl/pkg/server/network"
 	"axolotl/pkg/server/rootfs"
 	"encoding/json"
 	"fmt"
@@ -31,7 +32,16 @@ func runContainerInit() error {
 	if err := json.NewDecoder(os.Stdin).Decode(&image); err != nil {
 		return fmt.Errorf("invalid JSON: %w", err)
 	}
-	return image.Mount()
+
+	if err := image.Mount(); err != nil {
+		return err
+	}
+
+	if IsDebug() {
+		network.DebugNETNS()
+	}
+
+	return nil
 }
 
 func startDaemonMode() {
@@ -72,6 +82,8 @@ func startDaemonMode() {
 		}(tcpConn)
 	}
 }
+
+func IsDebug() bool { return false }
 
 const testPrivateKey = `
 -----BEGIN OPENSSH PRIVATE KEY-----
