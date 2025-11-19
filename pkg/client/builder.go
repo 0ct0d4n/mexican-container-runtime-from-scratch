@@ -2,6 +2,7 @@ package client
 
 import (
 	"axolotl/pkg/model"
+	"axolotl/pkg/util"
 	"fmt"
 	"github.com/docker/go-units"
 )
@@ -143,6 +144,7 @@ func (b *RequestBuilder) Build() (*model.RunRequest, error) {
 		IPC:           b.ipc,
 		User:          b.user,
 		Time:          b.time,
+		ID:            util.GenerateID(),
 	}
 
 	// Validate

@@ -3,6 +3,8 @@ package util
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -59,4 +61,13 @@ func UntarRootFS(tarFile, destDir string) error {
 	}
 
 	return nil
+}
+
+func GenerateID() string {
+	b := make([]byte, 8) // 64 bits = más que suficiente
+	_, err := rand.Read(b)
+	if err != nil {
+		return ""
+	}
+	return hex.EncodeToString(b)
 }

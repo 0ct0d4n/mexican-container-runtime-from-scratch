@@ -98,7 +98,7 @@ func main() {
 		WithImage(*imageName).
 		WithCommand(model.Commands{
 			Command: "/bin/sh",
-			Args:    []string{"-c", " echo hello   "},
+			Args:    []string{"-c", " /bin/busybox  ip addr add 10.0.0.2/24 dev veth-cont && ip link set veth-cont up && ip link set lo up   "},
 		}).
 		WithCgroup(*cgroupPath, *memoryMB, *cpuPercent, *maxPids).
 		Build()

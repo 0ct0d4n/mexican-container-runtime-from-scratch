@@ -52,6 +52,7 @@ type TimeNamespace struct {
 }
 
 type NamespaceConfig struct {
+	ID            string            `json:"id,omitempty"`
 	Org           string            `json:"org,omitempty"`
 	ContainerName string            `json:"container_name"`
 	ImageName     string            `json:"image_name,omitempty"`
