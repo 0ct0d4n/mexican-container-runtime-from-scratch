@@ -32,13 +32,14 @@ func runContainerInit() error {
 	if err := json.NewDecoder(os.Stdin).Decode(&image); err != nil {
 		return fmt.Errorf("invalid JSON: %w", err)
 	}
-
+	if IsDebug() {
+		log.Println("Debug mode ON")
+		network.DebugNETNS()
+	} else {
+		log.Println("Debug mode OFF")
+	}
 	if err := image.Mount(); err != nil {
 		return err
-	}
-
-	if IsDebug() {
-		network.DebugNETNS()
 	}
 
 	return nil
@@ -82,8 +83,6 @@ func startDaemonMode() {
 		}(tcpConn)
 	}
 }
-
-func IsDebug() bool { return false }
 
 const testPrivateKey = `
 -----BEGIN OPENSSH PRIVATE KEY-----

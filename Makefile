@@ -19,7 +19,7 @@ all: build
 
 build:
 	@echo "⚙️ Compilando $(BINARY_NAME) para Linux/ARM64..."
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -tags=debug -ldflags="-s -w" -o $(BINARY_NAME) daemon/main.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -tags=debug -ldflags="-s -w" -o $(BINARY_NAME) ./daemon
 	@echo "✅ Binario compilado: $(BINARY_NAME)"
 
 upload:
