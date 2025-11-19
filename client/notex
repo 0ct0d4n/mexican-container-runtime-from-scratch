@@ -1,0 +1,7 @@
+
+
+	ip a
+	WithCommand(model.Commands{
+			Command: "/bin/sh",
+			Args:    []string{"-c", "/bin/busybox ip a"},
+		}).
