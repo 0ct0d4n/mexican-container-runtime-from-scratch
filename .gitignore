@@ -1,6 +1,6 @@
-# Binaries
-axod
-axocli
+# Binaries (only in root)
+/axod
+/axocli
 *.exe
 *.dll
 *.so
