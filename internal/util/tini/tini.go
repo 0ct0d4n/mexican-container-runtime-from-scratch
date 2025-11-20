@@ -12,15 +12,15 @@ import (
 func StartMainProcess(command string, args ...string) error {
 	log.Printf("[INIT] Launching main process: %s %v\n", command, args)
 
-	// 1. Preparar el comando hijo
+	// 1. Prepare child command
 	cmd := exec.Command(command, args...)
 
-	// Heredar stdio para que se vea en la terminal del contenedor
+	// Inherit stdio so output is visible in container terminal
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// 2. Iniciar el proceso hijo
+	// 2. Start child process
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("[INIT] Failed to start child process: %w", err)
 	}
@@ -28,13 +28,13 @@ func StartMainProcess(command string, args ...string) error {
 	childPID := cmd.Process.Pid
 	log.Printf("[INIT] Child started with PID: %d\n", childPID)
 
-	// 3. Reenviar señales hacia el hijo
+	// 3. Forward signals to child
 	go forwardSignals(childPID)
 
-	// 4. Esperar a que el hijo termine
+	// 4. Wait for child to exit
 	err := cmd.Wait()
 
-	// 5. Obtener el exit code
+	// 5. Get exit code
 	exitCode := 0
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -47,7 +47,7 @@ func StartMainProcess(command string, args ...string) error {
 
 	log.Printf("[INIT] Child exited with code %d\n", exitCode)
 
-	// 6. Salir del init con el mismo exit code (así lo hace Docker)
+	// 6. Exit init with same exit code (Docker behavior)
 	os.Exit(exitCode)
 	return nil
 }
@@ -55,7 +55,7 @@ func StartMainProcess(command string, args ...string) error {
 func forwardSignals(childPID int) {
 	sigs := make(chan os.Signal, 32)
 
-	// Escuchar TODAS las señales, como Tini
+	// Listen to ALL signals, like Tini
 	signal.Notify(sigs)
 
 	for sig := range sigs {

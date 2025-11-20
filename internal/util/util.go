@@ -14,13 +14,13 @@ import (
 func UntarRootFS(tarFile, destDir string) error {
 	f, err := os.Open(tarFile)
 	if err != nil {
-		return fmt.Errorf("error abriendo tar: %w", err)
+		return fmt.Errorf("failed to open tar file: %w", err)
 	}
 	defer f.Close()
 
 	gz, err := gzip.NewReader(f)
 	if err != nil {
-		return fmt.Errorf("error leyendo gzip: %w", err)
+		return fmt.Errorf("failed to read gzip: %w", err)
 	}
 	defer gz.Close()
 
@@ -32,7 +32,7 @@ func UntarRootFS(tarFile, destDir string) error {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("error leyendo header tar: %w", err)
+			return fmt.Errorf("failed to read tar header: %w", err)
 		}
 
 		target := filepath.Join(destDir, hdr.Name)
@@ -46,7 +46,7 @@ func UntarRootFS(tarFile, destDir string) error {
 
 			out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(hdr.Mode))
 			if err != nil {
-				return fmt.Errorf("error creando archivo: %w", err)
+				return fmt.Errorf("failed to create file: %w", err)
 			}
 
 			if _, err := io.Copy(out, tr); err != nil {
@@ -64,7 +64,7 @@ func UntarRootFS(tarFile, destDir string) error {
 }
 
 func GenerateID() string {
-	b := make([]byte, 8) // 64 bits = más que suficiente
+	b := make([]byte, 8) // 64 bits (16 hex chars)
 	_, err := rand.Read(b)
 	if err != nil {
 		return ""

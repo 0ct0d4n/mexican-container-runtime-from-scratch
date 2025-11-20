@@ -14,13 +14,13 @@ import (
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "init-container" {
-		log.Println("Running init-container")
+		log.Println("[AXOD] Running as init-container (PID 1)")
 		// Run the container initialization sequence
 		if err := runContainerInit(); err != nil {
-			log.Println("❌ init-container failed:", err)
+			log.Printf("[AXOD] Init-container failed: %v", err)
 			os.Exit(1)
 		}
-		log.Println("init-container started")
+		log.Println("[AXOD] Init-container started successfully")
 		return
 	}
 
@@ -39,26 +39,28 @@ func runContainerInit() error {
 }
 
 func startDaemonMode() {
-	log.Println("Starting daemon")
-	err := cgroups.EnsureAxolotlRoot()
-	if err != nil {
-		log.Println("Axolotl Root already exists and it's in place, not something to worry about :) ", err)
+	log.Println("[AXOD] Starting Axolotl daemon")
+
+	// Ensure axolotl cgroup root exists with controllers enabled
+	if err := cgroups.EnsureAxolotlRoot(); err != nil {
+		log.Printf("[AXOD] Warning: cgroup root setup: %v (may already exist)", err)
 	}
+
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
 
 	private, err := ssh.ParsePrivateKey([]byte(testPrivateKey))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("[AXOD] Failed to parse private key:", err)
 	}
 	config.AddHostKey(private)
 
 	listener, err := net.Listen("tcp", ":2222")
 	if err != nil {
-		log.Fatal("Failed to listen:", err)
+		log.Fatal("[AXOD] Failed to listen on port 2222:", err)
 	}
-	log.Println("🦎 Axolotl SSH Daemon listening on port 2222...")
+	log.Println("[AXOD] SSH daemon listening on port 2222")
 
 	for {
 		tcpConn, err := listener.Accept()

@@ -53,7 +53,7 @@ func EnsureAxolotlRoot() error {
 		return err
 	}
 
-	// Debe estar vacío de procesos
+	// Must be empty of processes
 	procs, err := os.ReadFile(filepath.Join(CgroupRoot, "cgroup.procs"))
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func EnsureAxolotlRoot() error {
 		return fmt.Errorf("axolotl root cgroup has processes; can't enable controllers")
 	}
 
-	// Habilitar controladores
+	// Enable controllers
 	if err := os.WriteFile(
 		filepath.Join(CgroupRoot, "cgroup.subtree_control"),
 		[]byte("+memory +cpu +pids"),

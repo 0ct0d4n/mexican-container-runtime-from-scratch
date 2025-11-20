@@ -2,6 +2,7 @@ package cgroups
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -9,7 +10,7 @@ import (
 // applyMemoryLimit configures the memory.max cgroup controller
 func (m *Manager) applyMemoryLimit() error {
 	if m.config.MemoryMax <= 0 {
-		fmt.Println("🦎 [MEM] No limit configured, skipping memory.max")
+		log.Printf("[CGROUP] Skipping memory limit (no limit configured)")
 		return nil
 	}
 
@@ -21,8 +22,8 @@ func (m *Manager) applyMemoryLimit() error {
 	}
 
 	memMB := float64(m.config.MemoryMax) / (1024 * 1024)
-	fmt.Printf("✅ [MEM] memory.max configured at %s → %.1f MB (%d bytes)\n",
-		memoryMaxPath, memMB, m.config.MemoryMax)
+	log.Printf("[CGROUP] Memory limit applied: %.1f MB (%d bytes) at %s",
+		memMB, m.config.MemoryMax, memoryMaxPath)
 
 	return nil
 }
@@ -43,12 +44,12 @@ func (m *Manager) applyCPULimit() error {
 		quota = m.config.CPUQuota
 
 	default:
-		fmt.Println("🦎 [CPU] No limit configured, skipping cpu.max")
+		log.Printf("[CGROUP] Skipping CPU limit (no limit configured)")
 		return nil
 	}
 
 	if quota <= 0 {
-		fmt.Printf("⚠️ [CPU] Invalid quota value: %d (CPUMax=%.2f)\n", quota, m.config.CPUMax)
+		log.Printf("[CGROUP] Warning: invalid CPU quota value %d (CPUMax=%.2f), skipping", quota, m.config.CPUMax)
 		return nil
 	}
 
@@ -59,8 +60,9 @@ func (m *Manager) applyCPULimit() error {
 		return fmt.Errorf("failed to write %s: %w", cpuMaxPath, err)
 	}
 
-	fmt.Printf("✅ [CPU] cpu.max configured at %s → quota=%d period=%d (%.2f%%)\n",
-		cpuMaxPath, quota, period, (float64(quota)/float64(period))*100)
+	cpuPercent := (float64(quota) / float64(period)) * 100
+	log.Printf("[CGROUP] CPU limit applied: %.2f%% (quota=%d period=%d) at %s",
+		cpuPercent, quota, period, cpuMaxPath)
 
 	return nil
 }
@@ -68,7 +70,7 @@ func (m *Manager) applyCPULimit() error {
 // applyPidsLimit configures the pids.max cgroup controller
 func (m *Manager) applyPidsLimit() error {
 	if m.config.PidsMax <= 0 {
-		fmt.Println("🦎 [PIDS] No limit configured, skipping pids.max")
+		log.Printf("[CGROUP] Skipping PIDs limit (no limit configured)")
 		return nil
 	}
 
@@ -79,8 +81,8 @@ func (m *Manager) applyPidsLimit() error {
 		return fmt.Errorf("failed to write %s: %w", pidsMaxPath, err)
 	}
 
-	fmt.Printf("✅ [PIDS] pids.max configured at %s → maximum %d processes\n",
-		pidsMaxPath, m.config.PidsMax)
+	log.Printf("[CGROUP] PIDs limit applied: max %d processes at %s",
+		m.config.PidsMax, pidsMaxPath)
 
 	return nil
 }
@@ -94,6 +96,6 @@ func (m *Manager) AddProcess(pid int) error {
 		return fmt.Errorf("failed to add process %d to cgroup: %w", pid, err)
 	}
 
-	fmt.Printf("✅ [CGROUP] Process %d added to cgroup %s\n", pid, m.path)
+	log.Printf("[CGROUP] Process %d added to cgroup at %s", pid, m.path)
 	return nil
 }
