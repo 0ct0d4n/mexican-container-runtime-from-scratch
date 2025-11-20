@@ -70,29 +70,6 @@ func (v *VethPair) BringUpHost() error {
 	return nil
 }
 
-// ConfigureContainerSide configures the container-side networking
-// This should be called from inside the container's network namespace
-func (v *VethPair) ConfigureContainerSide(ip string) error {
-	commands := [][]string{
-		{"ip", "link", "set", "lo", "up"},
-		{"ip", "link", "set", v.ContainerVeth, "up"},
-		{"ip", "addr", "add", ip, "dev", v.ContainerVeth},
-	}
-
-	for _, cmdArgs := range commands {
-		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("container network config failed (%v): %w", cmdArgs, err)
-		}
-	}
-
-	log.Printf("[NETWORK] Container network configured: %s on %s", ip, v.ContainerVeth)
-	return nil
-}
-
 // SetupHostNetworking performs all host-side network setup
 // 1. Creates veth pair
 // 2. Moves container veth to container's netns

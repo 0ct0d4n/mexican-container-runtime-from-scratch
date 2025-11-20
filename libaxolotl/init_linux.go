@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -24,6 +25,7 @@ type InitConfig struct {
 	RootfsPath  string
 	VethPair    *network.VethPair
 	ContainerIP string
+	Gateway     string
 	Commands    types.Commands
 }
 
@@ -66,12 +68,59 @@ func InitContainer(cfg *InitConfig) error {
 
 	// Step 5: Configure container networking
 
-	if err := cfg.VethPair.ConfigureContainerSide(cfg.ContainerIP); err != nil {
+	if err := cfg.ConfigureContainerSide(cfg.ContainerIP); err != nil {
 		return fmt.Errorf("failed to configure container network: %w", err)
 	}
 
 	// Step 6: Start the main process (like tini)
 	return startMainProcess(cfg.Commands.Command, cfg.Commands.Args...)
+}
+
+func (initCfg *InitConfig) ConfigureContainerSide(ip string) error {
+	log.Printf("[NET] Starting container-side network configuration")
+	log.Printf("[NET] Using tool: %T", network.ResolveNetworkTool(initCfg.RootfsPath))
+
+	tool := network.ResolveNetworkTool(initCfg.RootfsPath)
+
+	// --- 1. Validar formato de IP/CIDR ---
+	if _, _, err := net.ParseCIDR(ip); err != nil {
+		return fmt.Errorf("invalid IP format '%s': %w", ip, err)
+	}
+
+	// --- 2. Loopback ---
+	if err := tool.LinkSetUp("lo"); err != nil {
+		return fmt.Errorf("lo up failed: %w", err)
+	}
+	log.Printf("[NET] Loopback interface up")
+
+	// --- 3. Levantar interfaz veth del contenedor ---
+	if err := tool.LinkSetUp(initCfg.VethPair.ContainerVeth); err != nil {
+		return fmt.Errorf("failed to bring up %s: %w", initCfg.VethPair.ContainerVeth, err)
+	}
+	log.Printf("[NET] Interface %s is up", initCfg.VethPair.ContainerVeth)
+
+	// --- 4. Asignar IP ---
+	if err := tool.AddrAdd(initCfg.VethPair.ContainerVeth, ip); err != nil {
+		return fmt.Errorf("failed to assign IP %s to %s: %w",
+			ip, initCfg.VethPair.ContainerVeth, err)
+	}
+	log.Printf("[NET] IP %s assigned to %s", ip, initCfg.VethPair.ContainerVeth)
+
+	// --- 5. Agregar default route opcional ---
+	gw := "10.0.0.1"
+	if initCfg.Gateway != "" {
+		gw = initCfg.Gateway
+	}
+
+	if err := tool.RouteAddDefault(gw); err != nil {
+		log.Printf("[WARN] Could not set default route via %s: %v", gw, err)
+	} else {
+		log.Printf("[NET] Default route via %s configured", gw)
+	}
+
+	log.Printf("[NET] Container-side network configuration complete")
+
+	return nil
 }
 
 // startMainProcess starts the main container process and forwards signals (tini-like)
