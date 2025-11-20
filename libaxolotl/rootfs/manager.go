@@ -15,15 +15,13 @@ import (
 
 // Container represents a prepared container rootfs
 type Container struct {
-	ID              string
-	InstallPath     string
-	DownloadPath    string
-	Config          *Config
-	Distro          DistroType
-	RootfsPath      string
-	Commands        types.Commands
-	HostVeth        string
-	ContainerVeth   string
+	ID           string
+	InstallPath  string
+	DownloadPath string
+	Config       *Config
+	Distro       DistroType
+	RootfsPath   string
+	Commands     types.Commands
 }
 
 // Install downloads and prepares a rootfs for the given container configuration
@@ -52,19 +50,14 @@ func Install(basePath string, cfg *types.ContainerSetupSettings, commands types.
 		return nil, fmt.Errorf("failed to extract rootfs: %w", err)
 	}
 
-	// Generate veth pair names
-	vethHost, vethContainer := generateVethNames(cfg.ID)
-
 	container := &Container{
-		ID:            cfg.ID,
-		InstallPath:   installPath,
-		DownloadPath:  downloadPath,
-		Config:        &distroCfg,
-		Distro:        distroType,
-		RootfsPath:    rootfsPath,
-		Commands:      commands,
-		HostVeth:      vethHost,
-		ContainerVeth: vethContainer,
+		ID:           cfg.ID,
+		InstallPath:  installPath,
+		DownloadPath: downloadPath,
+		Config:       &distroCfg,
+		Distro:       distroType,
+		RootfsPath:   rootfsPath,
+		Commands:     commands,
 	}
 
 	log.Printf("[ROOTFS] Image installed successfully: %s", rootfsPath)

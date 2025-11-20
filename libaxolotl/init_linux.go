@@ -7,12 +7,14 @@ import (
 	"axolotl/libaxolotl/network"
 	"axolotl/libaxolotl/rootfs"
 	"axolotl/libaxolotl/types"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -138,4 +140,53 @@ func reapZombies() {
 
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+// spawnContainer spawns the container process with namespaces
+func (initCfg *InitConfig) spawnContainer() error {
+
+	// Re-execute ourselves in init mode with namespaces
+	cmd := exec.Command("/proc/self/exe", "init-container")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: syscall.CLONE_NEWNS | // Mount namespace
+			syscall.CLONE_NEWPID | // PID namespace
+			syscall.CLONE_NEWUTS | // UTS namespace (hostname)
+			syscall.CLONE_NEWIPC | // IPC namespace
+			syscall.CLONE_NEWNET, // Network namespace
+	}
+
+	// Pass init config via stdin
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stdin pipe: %w", err)
+	}
+
+	go func() {
+		json.NewEncoder(stdin).Encode(initCfg)
+		stdin.Close()
+	}()
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Start the child process
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start container process: %w", err)
+	}
+
+	childPID := cmd.Process.Pid
+	log.Printf("[CONTAINER] Child process started with PID=%d", childPID)
+
+	// Step 6: Setup host-side networking (veth pair)
+	if err := network.SetupHostNetworking(initCfg.VethPair, strconv.Itoa(childPID)); err != nil {
+		return fmt.Errorf("failed to setup host networking: %w", err)
+	}
+	log.Printf("[CONTAINER] Host networking configured: %s <-> %s", initCfg.VethPair.HostVeth, initCfg.VethPair.ContainerVeth)
+
+	// Step 7: Wait for container to finish
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("container exited with error: %w", err)
+	}
+
+	return nil
 }
