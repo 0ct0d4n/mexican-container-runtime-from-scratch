@@ -42,16 +42,33 @@ func NewManager(cfg *types.ContainerSetupSettings) (*Manager, error) {
 	cgroupPath := buildCgroupPath(cfg)
 	log.Printf("[CGROUP] Creating cgroup at %s", cgroupPath)
 
-	if err := ensureDir(cgroupPath); err != nil {
-		return nil, fmt.Errorf("failed to create cgroup directory: %w", err)
-	}
-
-	log.Printf("[CGROUP] Created successfully at %s", cgroupPath)
-
 	return &Manager{
 		path:   cgroupPath,
 		config: cfg.Cgroup,
 	}, nil
+}
+
+func (m *Manager) CreateCgroup() error {
+	info, err := os.Stat(m.path)
+
+	if err == nil {
+		// Path exists: verify it's a directory
+		if !info.IsDir() {
+			return fmt.Errorf("%s exists but is not a directory", m.path)
+		}
+		return nil
+	}
+
+	// If doesn't exist, create it
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(m.path, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", m.path, err)
+		}
+		return nil
+	}
+
+	// Unexpected error
+	return fmt.Errorf("error checking %s: %w", m.path, err)
 }
 
 // ApplyLimits applies all configured resource limits (memory, CPU, PIDs)
@@ -88,30 +105,6 @@ func buildCgroupPath(cfg *types.ContainerSetupSettings) string {
 	// Example: /sys/fs/cgroup/org_containername_path
 	//name := cfg.Org + "_" + cfg.ContainerName + "_" + cfg.Cgroup.Path
 	return filepath.Join(CgroupRoot, cfg.ID)
-}
-
-// ensureDir creates the directory if it doesn't exist, or verifies it's a directory
-func ensureDir(path string) error {
-	info, err := os.Stat(path)
-
-	if err == nil {
-		// Path exists: verify it's a directory
-		if !info.IsDir() {
-			return fmt.Errorf("%s exists but is not a directory", path)
-		}
-		return nil
-	}
-
-	// If doesn't exist, create it
-	if os.IsNotExist(err) {
-		if err := os.MkdirAll(path, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", path, err)
-		}
-		return nil
-	}
-
-	// Unexpected error
-	return fmt.Errorf("error checking %s: %w", path, err)
 }
 
 // currentSlice returns the current systemd slice this process belongs to

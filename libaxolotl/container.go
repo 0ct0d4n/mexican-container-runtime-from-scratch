@@ -32,6 +32,11 @@ func Start(request *types.RunRequest) error {
 		return fmt.Errorf("failed to create cgroup: %w", err)
 	}
 
+	err = cgroupManager.CreateCgroup()
+	if err != nil {
+		return err
+	}
+
 	// Step 2: Apply resource limits
 	if err := cgroupManager.ApplyLimits(); err != nil {
 		return fmt.Errorf("failed to apply cgroup limits: %w", err)
@@ -70,11 +75,11 @@ func spawnContainer(container *rootfs.Container) error {
 	// Re-execute ourselves in init mode with namespaces
 	cmd := exec.Command("/proc/self/exe", "init-container")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWNS |   // Mount namespace
-			syscall.CLONE_NEWPID |  // PID namespace
-			syscall.CLONE_NEWUTS |  // UTS namespace (hostname)
-			syscall.CLONE_NEWIPC |  // IPC namespace
-			syscall.CLONE_NEWNET,   // Network namespace
+		Cloneflags: syscall.CLONE_NEWNS | // Mount namespace
+			syscall.CLONE_NEWPID | // PID namespace
+			syscall.CLONE_NEWUTS | // UTS namespace (hostname)
+			syscall.CLONE_NEWIPC | // IPC namespace
+			syscall.CLONE_NEWNET, // Network namespace
 	}
 
 	// Pass init config via stdin
