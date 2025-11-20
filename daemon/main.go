@@ -28,15 +28,15 @@ func main() {
 	startDaemonMode()
 }
 func runContainerInit() error {
-	var image *rootfs.ContainerParameters
-	if err := json.NewDecoder(os.Stdin).Decode(&image); err != nil {
+	var container *rootfs.ContainerParameters
+	if err := json.NewDecoder(os.Stdin).Decode(&container); err != nil {
 		return fmt.Errorf("invalid JSON: %w", err)
 	}
 	if IsDebug() {
 		log.Println("Debug mode ON")
 		network.DebugNETNS()
 	}
-	if err := image.Mount(); err != nil {
+	if err := container.Mount(); err != nil {
 		return err
 	}
 
