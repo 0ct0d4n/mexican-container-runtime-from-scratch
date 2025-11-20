@@ -5,7 +5,6 @@ package libaxolotl
 
 import (
 	"axolotl/libaxolotl/cgroups"
-	"axolotl/libaxolotl/network"
 	"axolotl/libaxolotl/rootfs"
 	"axolotl/libaxolotl/types"
 	"fmt"
@@ -56,15 +55,4 @@ func Start(request *types.RunRequest) error {
 
 	log.Printf("[CONTAINER] Container %s completed successfully", request.Namespace.ContainerName)
 	return nil
-}
-
-// spawnContainer spawns the container process with namespaces
-func createInitConfig(container *rootfs.Container) *InitConfig {
-	// Prepare init config
-	return &InitConfig{
-		RootfsPath:  container.RootfsPath,
-		ContainerIP: "10.0.0.2/24",
-		Commands:    container.Commands,
-		VethPair:    network.NewVethPair(container.ID),
-	}
 }

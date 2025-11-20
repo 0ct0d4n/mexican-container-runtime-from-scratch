@@ -27,6 +27,17 @@ type InitConfig struct {
 	Commands    types.Commands
 }
 
+// spawnContainer spawns the container process with namespaces
+func createInitConfig(container *rootfs.Container) *InitConfig {
+	// Prepare init config
+	return &InitConfig{
+		RootfsPath:  container.RootfsPath,
+		ContainerIP: "10.0.0.2/24",
+		Commands:    container.Commands,
+		VethPair:    network.NewVethPair(container.ID),
+	}
+}
+
 // InitContainer performs all container initialization steps
 // This function is called from within the container's namespaces (PID=1)
 func InitContainer(cfg *InitConfig) error {
