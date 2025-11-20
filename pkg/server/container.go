@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"syscall"
 )
 
@@ -52,6 +53,11 @@ func spawnProcess(err error, image *rootfs.ContainerParameters) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	childPid := cmd.Process.Pid
+	err = image.CreateNetworkingHost(strconv.Itoa(childPid))
 	if err != nil {
 		return err
 	}
