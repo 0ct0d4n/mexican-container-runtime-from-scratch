@@ -1,4 +1,4 @@
-package model
+package types
 
 // UTS namespace: hostname y dominio
 type UTSNamespace struct {

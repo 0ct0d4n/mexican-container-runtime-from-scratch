@@ -1,26 +1,26 @@
 package client
 
 import (
-	"axolotl/pkg/model"
-	"axolotl/pkg/util"
+	"axolotl/libaxolotl/types"
+	"axolotl/internal/util"
 	"fmt"
 	"github.com/docker/go-units"
 )
 
 // RequestBuilder builds a RunRequest with validation.
 type RequestBuilder struct {
-	command       model.Commands
+	command       types.Commands
 	containerName string
 	image         string
 	org           string
-	cgroup        *model.CgroupNamespace
-	uts           *model.UTSNamespace
-	pid           *model.PIDNamespace
-	network       *model.NetworkNamespace
-	mount         *model.MountNamespace
-	ipc           *model.IPCNamespace
-	user          *model.UserNamespace
-	time          *model.TimeNamespace
+	cgroup        *types.CgroupNamespace
+	uts           *types.UTSNamespace
+	pid           *types.PIDNamespace
+	network       *types.NetworkNamespace
+	mount         *types.MountNamespace
+	ipc           *types.IPCNamespace
+	user          *types.UserNamespace
+	time          *types.TimeNamespace
 }
 
 // NewRequestBuilder creates a new RequestBuilder.
@@ -29,7 +29,7 @@ func NewRequestBuilder() *RequestBuilder {
 }
 
 // WithCommand sets the command to execute.
-func (b *RequestBuilder) WithCommand(cmd model.Commands) *RequestBuilder {
+func (b *RequestBuilder) WithCommand(cmd types.Commands) *RequestBuilder {
 	b.command = cmd
 	return b
 }
@@ -52,7 +52,7 @@ func (b *RequestBuilder) WithOrg(name string) *RequestBuilder {
 
 // WithCgroup configures cgroup namespace limits.
 func (b *RequestBuilder) WithCgroup(path string, memoryMB int64, cpuPercent float64, maxPids uint64) *RequestBuilder {
-	b.cgroup = &model.CgroupNamespace{
+	b.cgroup = &types.CgroupNamespace{
 		Path:      path,
 		MemoryMax: uint64(memoryMB * units.MB),
 		CPUMax:    cpuPercent,
@@ -62,14 +62,14 @@ func (b *RequestBuilder) WithCgroup(path string, memoryMB int64, cpuPercent floa
 }
 
 // WithCgroupRaw sets the cgroup configuration directly.
-func (b *RequestBuilder) WithCgroupRaw(cgroup *model.CgroupNamespace) *RequestBuilder {
+func (b *RequestBuilder) WithCgroupRaw(cgroup *types.CgroupNamespace) *RequestBuilder {
 	b.cgroup = cgroup
 	return b
 }
 
 // WithUTS configures UTS namespace (hostname and domain).
 func (b *RequestBuilder) WithUTS(hostname, domain string) *RequestBuilder {
-	b.uts = &model.UTSNamespace{
+	b.uts = &types.UTSNamespace{
 		Hostname: hostname,
 		Domain:   domain,
 	}
@@ -78,7 +78,7 @@ func (b *RequestBuilder) WithUTS(hostname, domain string) *RequestBuilder {
 
 // WithPID configures PID namespace.
 func (b *RequestBuilder) WithPID(initCommand []string) *RequestBuilder {
-	b.pid = &model.PIDNamespace{
+	b.pid = &types.PIDNamespace{
 		InitCommand: initCommand,
 	}
 	return b
@@ -86,7 +86,7 @@ func (b *RequestBuilder) WithPID(initCommand []string) *RequestBuilder {
 
 // WithNetwork configures network namespace.
 func (b *RequestBuilder) WithNetwork(enableLoopback bool, interfaces []string, routes map[string]string) *RequestBuilder {
-	b.network = &model.NetworkNamespace{
+	b.network = &types.NetworkNamespace{
 		EnableLoopback: enableLoopback,
 		Interfaces:     interfaces,
 		Routes:         routes,
@@ -96,7 +96,7 @@ func (b *RequestBuilder) WithNetwork(enableLoopback bool, interfaces []string, r
 
 // WithMount configures mount namespace.
 func (b *RequestBuilder) WithMount(rootfs string, mounts []string, readOnly bool) *RequestBuilder {
-	b.mount = &model.MountNamespace{
+	b.mount = &types.MountNamespace{
 		Rootfs:   rootfs,
 		Mounts:   mounts,
 		ReadOnly: readOnly,
@@ -106,7 +106,7 @@ func (b *RequestBuilder) WithMount(rootfs string, mounts []string, readOnly bool
 
 // WithIPC configures IPC namespace.
 func (b *RequestBuilder) WithIPC(shmLimit int64) *RequestBuilder {
-	b.ipc = &model.IPCNamespace{
+	b.ipc = &types.IPCNamespace{
 		SharedMemoryLimit: shmLimit,
 	}
 	return b
@@ -114,7 +114,7 @@ func (b *RequestBuilder) WithIPC(shmLimit int64) *RequestBuilder {
 
 // WithUser configures user namespace.
 func (b *RequestBuilder) WithUser(uidMap, gidMap map[int]int) *RequestBuilder {
-	b.user = &model.UserNamespace{
+	b.user = &types.UserNamespace{
 		UIDMap: uidMap,
 		GIDMap: gidMap,
 	}
@@ -123,16 +123,16 @@ func (b *RequestBuilder) WithUser(uidMap, gidMap map[int]int) *RequestBuilder {
 
 // WithTime configures time namespace.
 func (b *RequestBuilder) WithTime(offsetSeconds int64) *RequestBuilder {
-	b.time = &model.TimeNamespace{
+	b.time = &types.TimeNamespace{
 		OffsetSeconds: offsetSeconds,
 	}
 	return b
 }
 
 // Build creates a RunRequest with validation.
-func (b *RequestBuilder) Build() (*model.RunRequest, error) {
+func (b *RequestBuilder) Build() (*types.RunRequest, error) {
 	// Build namespace config
-	namespace := &model.ContainerSetupSettings{
+	namespace := &types.ContainerSetupSettings{
 		ContainerName: b.containerName,
 		Org:           b.org,
 		ImageName:     b.image,
@@ -152,14 +152,14 @@ func (b *RequestBuilder) Build() (*model.RunRequest, error) {
 		return nil, err
 	}
 
-	return &model.RunRequest{
+	return &types.RunRequest{
 		Command:   b.command,
 		Namespace: namespace,
 	}, nil
 }
 
 // validate performs validation on the request.
-func (b *RequestBuilder) validate(ns *model.ContainerSetupSettings) error {
+func (b *RequestBuilder) validate(ns *types.ContainerSetupSettings) error {
 	// At least one namespace configuration should be provided
 	hasNamespace := ns.Cgroup != nil || ns.UTS != nil || ns.PID != nil ||
 		ns.Network != nil || ns.Mount != nil || ns.IPC != nil ||
@@ -197,7 +197,7 @@ func (b *RequestBuilder) validate(ns *model.ContainerSetupSettings) error {
 
 // BuildOrPanic creates a RunRequest or panics if validation fails.
 // Useful for testing or known-good configurations.
-func (b *RequestBuilder) BuildOrPanic() *model.RunRequest {
+func (b *RequestBuilder) BuildOrPanic() *types.RunRequest {
 	req, err := b.Build()
 	if err != nil {
 		panic(fmt.Sprintf("failed to build request: %v", err))

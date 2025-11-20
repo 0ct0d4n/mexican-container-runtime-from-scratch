@@ -1,13 +1,18 @@
-package server
+// Package daemon provides SSH daemon functionality for the axolotl runtime
+package daemon
 
 import (
+	"axolotl/libaxolotl"
+	"axolotl/libaxolotl/types"
+	"encoding/json"
+	"fmt"
 	"golang.org/x/crypto/ssh"
 	"log"
 )
 
+// HandleConnection handles incoming SSH connections
 func HandleConnection(chans <-chan ssh.NewChannel) {
 	for newChannel := range chans {
-
 		if newChannel.ChannelType() != "session" {
 			newChannel.Reject(ssh.UnknownChannelType, "only sessions allowed")
 			continue
@@ -24,14 +29,12 @@ func HandleConnection(chans <-chan ssh.NewChannel) {
 }
 
 func handleChannelRequests(ch ssh.Channel, reqs <-chan *ssh.Request) {
-
 	for req := range reqs {
 		log.Printf("Request received: type=%s payload=%x", req.Type, req.Payload)
 
 		switch req.Type {
-
 		case "exec":
-			// If handleExecRequest returns true, we exit
+			// Handle exec request and close channel when done
 			if handleExecRequest(ch, req) {
 				log.Println("Channel completed, closing...")
 				_ = ch.Close()
@@ -47,7 +50,7 @@ func handleChannelRequests(ch ssh.Channel, reqs <-chan *ssh.Request) {
 func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 	var args struct{ Command string }
 
-	// 1️⃣ Leer solo el comando SSH ("AXO_RUN")
+	// Parse SSH exec command
 	if err := ssh.Unmarshal(req.Payload, &args); err != nil {
 		log.Printf("Error unmarshalling exec command: %v", err)
 		_ = req.Reply(false, nil)
@@ -57,25 +60,25 @@ func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 	log.Printf("Exec command received: %s", args.Command)
 
 	switch args.Command {
-
 	case "AXO_RUN":
 		if err := req.Reply(true, nil); err != nil {
 			log.Printf("Error replying to exec request: %v", err)
 			return true
 		}
 
-		payload, err := decodePayloadFromChannel(ch)
+		// Decode payload from channel
+		payload, err := decodePayload(ch)
 		if err != nil {
 			log.Printf("Error decoding payload: %v", err)
 			return true
 		}
 
-		err = StartContainer(err, payload)
+		// Start container
+		err = libaxolotl.Start(payload)
 		if err != nil {
-			log.Printf("[CGROUP] Error: failed to create instance: %v", err)
+			log.Printf("[CONTAINER] Error: %v", err)
 			ch.Write([]byte("error\n"))
 		} else {
-
 			ch.Write([]byte("ok\n"))
 		}
 
@@ -87,4 +90,15 @@ func handleExecRequest(ch ssh.Channel, req *ssh.Request) bool {
 		_ = req.Reply(false, nil)
 		return true
 	}
+}
+
+func decodePayload(ch ssh.Channel) (*types.RunRequest, error) {
+	var runRequest types.RunRequest
+	decoder := json.NewDecoder(ch)
+
+	if err := decoder.Decode(&runRequest); err != nil {
+		return nil, fmt.Errorf("decode error: %w", err)
+	}
+
+	return &runRequest, nil
 }

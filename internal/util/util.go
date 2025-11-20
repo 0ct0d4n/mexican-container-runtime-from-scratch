@@ -71,3 +71,15 @@ func GenerateID() string {
 	}
 	return hex.EncodeToString(b)
 }
+
+// FileExists checks if a file or directory exists
+func FileExists(path string) error {
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("path does not exist: %s", path)
+		}
+		return fmt.Errorf("error checking path %s: %w", path, err)
+	}
+	return nil
+}

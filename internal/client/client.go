@@ -1,8 +1,8 @@
 package client
 
 import (
-	"axolotl/pkg/command"
-	"axolotl/pkg/model"
+	"axolotl/internal/command"
+	"axolotl/libaxolotl/types"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -60,7 +60,7 @@ func (c *Client) Close() error {
 }
 
 // Create creates a container with the given namespace configuration.
-func (c *Client) Create(ctx context.Context, req *model.RunRequest) (*Response, error) {
+func (c *Client) Create(ctx context.Context, req *types.RunRequest) (*Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("request cannot be nil")
 	}
