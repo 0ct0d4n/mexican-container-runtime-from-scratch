@@ -12,7 +12,7 @@ import (
 
 const (
 	// CgroupRoot is the cgroup v2 unified hierarchy mount point
-	CgroupRoot = "/sys/fs/cgroup/"
+	CgroupRoot = "/sys/fs/cgroup/axolotl/"
 )
 
 // Manager handles cgroup lifecycle and resource limits
@@ -86,8 +86,8 @@ func (m *Manager) Destroy() error {
 func buildCgroupPath(cfg *types.ContainerSetupSettings) string {
 	// Use underscore separator to create a flat cgroup hierarchy
 	// Example: /sys/fs/cgroup/org_containername_path
-	name := cfg.Org + "_" + cfg.ContainerName + "_" + cfg.Cgroup.Path
-	return filepath.Join(CgroupRoot, name)
+	//name := cfg.Org + "_" + cfg.ContainerName + "_" + cfg.Cgroup.Path
+	return filepath.Join(CgroupRoot, cfg.ID)
 }
 
 // ensureDir creates the directory if it doesn't exist, or verifies it's a directory
