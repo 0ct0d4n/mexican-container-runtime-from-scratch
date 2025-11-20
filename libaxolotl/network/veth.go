@@ -18,8 +18,8 @@ type VethPair struct {
 func NewVethPair(containerID string) *VethPair {
 	// Truncate ID to keep interface names short (max 15 chars for ifname)
 	shortID := containerID
-	if len(shortID) > 11 {
-		shortID = shortID[:11]
+	if len(shortID) > 9 {
+		shortID = shortID[:9]
 	}
 
 	return &VethPair{
