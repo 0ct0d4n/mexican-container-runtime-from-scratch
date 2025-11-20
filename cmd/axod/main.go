@@ -3,6 +3,7 @@ package main
 import (
 	"axolotl/internal/daemon"
 	"axolotl/libaxolotl"
+	"axolotl/libaxolotl/cgroups"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/crypto/ssh"
@@ -39,6 +40,11 @@ func runContainerInit() error {
 
 func startDaemonMode() {
 	log.Println("Starting daemon")
+	err := cgroups.EnsureAxolotlRoot()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}

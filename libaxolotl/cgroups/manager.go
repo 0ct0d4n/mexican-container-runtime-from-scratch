@@ -48,6 +48,31 @@ func NewManager(cfg *types.ContainerSetupSettings) (*Manager, error) {
 	}, nil
 }
 
+func EnsureAxolotlRoot() error {
+	if err := os.MkdirAll(CgroupRoot, 0755); err != nil {
+		return err
+	}
+
+	// Debe estar vacío de procesos
+	procs, err := os.ReadFile(filepath.Join(CgroupRoot, "cgroup.procs"))
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(string(procs)) != "" {
+		return fmt.Errorf("axolotl root cgroup has processes; can't enable controllers")
+	}
+
+	// Habilitar controladores
+	if err := os.WriteFile(
+		filepath.Join(CgroupRoot, "cgroup.subtree_control"),
+		[]byte("+memory +cpu +pids"),
+		0644,
+	); err != nil {
+		return fmt.Errorf("enabling controllers on axolotl cgroup: %w", err)
+	}
+	return nil
+}
+
 func (m *Manager) CreateCgroup() error {
 	info, err := os.Stat(m.path)
 
