@@ -24,18 +24,16 @@ func ResolveNetworkTool(rootfsPath string) NetTool {
 		return &IpRoute2Tool{Path: "/usr/bin/ip"}
 	}
 
-	return &DirectSysfsTool{} // ultra fallback
+	return &DirectSysfsTool{}
 }
 
-// Exists returns true if the file or directory exists.
 func Exists(path string) bool {
 	_, err := os.Stat(path)
 	if err == nil {
-		return true // existe
+		return true
 	}
 	if os.IsNotExist(err) {
-		return false // no existe
+		return false
 	}
-	// cualquier otro error (permisos, etc.) lo consideramos como "sí existe"
 	return true
 }

@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 )
 
-// MountPoint represents a filesystem mount point
 type MountPoint struct {
 	Source string
 	Target string
@@ -19,7 +18,6 @@ type MountPoint struct {
 	Data   string
 }
 
-// GetDefaultMounts returns the default mount points for a container
 func GetDefaultMounts(rootfsPath string) []MountPoint {
 	return []MountPoint{
 		{
@@ -49,15 +47,12 @@ func GetDefaultMounts(rootfsPath string) []MountPoint {
 	}
 }
 
-// MountAll mounts all the given mount points
 func MountAll(mounts []MountPoint) error {
 	for _, m := range mounts {
-		// Create target directory
 		if err := os.MkdirAll(m.Target, 0755); err != nil {
 			return fmt.Errorf("failed to create mount point %s: %w", m.Target, err)
 		}
 
-		// Perform mount
 		if err := unix.Mount(m.Source, m.Target, m.FSType, m.Flags, ""); err != nil {
 			return fmt.Errorf("failed to mount %s at %s: %w", m.Source, m.Target, err)
 		}
@@ -65,7 +60,6 @@ func MountAll(mounts []MountPoint) error {
 	return nil
 }
 
-// UnmountAll unmounts all the given mount points
 func UnmountAll(mounts []MountPoint) {
 	for _, m := range mounts {
 		unix.Unmount(m.Target, 0)
@@ -73,7 +67,6 @@ func UnmountAll(mounts []MountPoint) {
 	}
 }
 
-// SetMountPropagation sets mount propagation to private
 func SetMountPropagation() error {
 	if err := unix.Mount("", "/", "", unix.MS_REC|unix.MS_PRIVATE, ""); err != nil {
 		return fmt.Errorf("failed to set mount propagation: %w", err)

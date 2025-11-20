@@ -7,10 +7,9 @@ import (
 	"path/filepath"
 )
 
-// applyMemoryLimit configures the memory.max cgroup controller
 func (m *Manager) applyMemoryLimit() error {
 	if m.config.MemoryMax <= 0 {
-		log.Printf("[CGROUP] Skipping memory limit (no limit configured)")
+		log.Printf("[CGROUP] Skipping memory limit")
 		return nil
 	}
 
@@ -22,16 +21,14 @@ func (m *Manager) applyMemoryLimit() error {
 	}
 
 	memMB := float64(m.config.MemoryMax) / (1024 * 1024)
-	log.Printf("[CGROUP] Memory limit applied: %.1f MB (%d bytes) at %s",
-		memMB, m.config.MemoryMax, memoryMaxPath)
+	log.Printf("[CGROUP] Memory limit set to %.1f MB", memMB)
 
 	return nil
 }
 
-// applyCPULimit configures the cpu.max cgroup controller
 func (m *Manager) applyCPULimit() error {
 	var (
-		period int64 = 100000 // standard base period (100ms)
+		period int64 = 100000
 		quota  int64
 	)
 
@@ -44,12 +41,12 @@ func (m *Manager) applyCPULimit() error {
 		quota = m.config.CPUQuota
 
 	default:
-		log.Printf("[CGROUP] Skipping CPU limit (no limit configured)")
+		log.Printf("[CGROUP] Skipping CPU limit")
 		return nil
 	}
 
 	if quota <= 0 {
-		log.Printf("[CGROUP] Warning: invalid CPU quota value %d (CPUMax=%.2f), skipping", quota, m.config.CPUMax)
+		log.Printf("[CGROUP] Warning: invalid CPU quota %d, skipping", quota)
 		return nil
 	}
 
@@ -61,16 +58,14 @@ func (m *Manager) applyCPULimit() error {
 	}
 
 	cpuPercent := (float64(quota) / float64(period)) * 100
-	log.Printf("[CGROUP] CPU limit applied: %.2f%% (quota=%d period=%d) at %s",
-		cpuPercent, quota, period, cpuMaxPath)
+	log.Printf("[CGROUP] CPU limit set to %.2f%%", cpuPercent)
 
 	return nil
 }
 
-// applyPidsLimit configures the pids.max cgroup controller
 func (m *Manager) applyPidsLimit() error {
 	if m.config.PidsMax <= 0 {
-		log.Printf("[CGROUP] Skipping PIDs limit (no limit configured)")
+		log.Printf("[CGROUP] Skipping PIDs limit")
 		return nil
 	}
 
@@ -81,13 +76,11 @@ func (m *Manager) applyPidsLimit() error {
 		return fmt.Errorf("failed to write %s: %w", pidsMaxPath, err)
 	}
 
-	log.Printf("[CGROUP] PIDs limit applied: max %d processes at %s",
-		m.config.PidsMax, pidsMaxPath)
+	log.Printf("[CGROUP] PIDs limit set to %d processes", m.config.PidsMax)
 
 	return nil
 }
 
-// AddProcess adds a process to this cgroup
 func (m *Manager) AddProcess(pid int) error {
 	procsPath := filepath.Join(m.path, "cgroup.procs")
 	data := fmt.Sprintf("%d", pid)
@@ -96,6 +89,6 @@ func (m *Manager) AddProcess(pid int) error {
 		return fmt.Errorf("failed to add process %d to cgroup: %w", pid, err)
 	}
 
-	log.Printf("[CGROUP] Process %d added to cgroup at %s", pid, m.path)
+	log.Printf("[CGROUP] Process %d added to cgroup", pid)
 	return nil
 }

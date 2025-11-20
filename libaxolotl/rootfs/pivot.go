@@ -10,37 +10,31 @@ import (
 	"path/filepath"
 )
 
-// PivotRoot performs the pivot_root system call to change the root filesystem
-// This is more secure than chroot as it properly isolates the container
+// PivotRoot changes the root filesystem using pivot_root (more secure than chroot)
 func PivotRoot(newRoot string) error {
-	// Step 1: Bind mount newRoot onto itself to make it a mount point
 	if err := unix.Mount(newRoot, newRoot, "", unix.MS_BIND|unix.MS_REC, ""); err != nil {
-		return fmt.Errorf("failed to bind-mount rootfs on itself (%s): %w", newRoot, err)
+		return fmt.Errorf("failed to bind-mount rootfs: %w", err)
 	}
 
-	// Step 2: Create putOld directory for old root
 	putOld := filepath.Join(newRoot, ".pivot_root_old")
 	if err := os.MkdirAll(putOld, 0700); err != nil {
-		return fmt.Errorf("failed to create putOld dir %s: %w", putOld, err)
+		return fmt.Errorf("failed to create pivot_root temp dir: %w", err)
 	}
 
-	// Step 3: Call pivot_root
 	if err := unix.PivotRoot(newRoot, putOld); err != nil {
-		return fmt.Errorf("pivot_root(%s, %s) failed: %w", newRoot, putOld, err)
+		return fmt.Errorf("pivot_root failed: %w", err)
 	}
 
-	// Step 4: Change to the new root
 	if err := os.Chdir("/"); err != nil {
-		return fmt.Errorf("failed to chdir(\"/\"): %w", err)
+		return fmt.Errorf("chdir to new root failed: %w", err)
 	}
 
-	// Step 5: Unmount and remove old root
 	oldRoot := "/.pivot_root_old"
 	if err := unix.Unmount(oldRoot, unix.MNT_DETACH); err != nil {
-		return fmt.Errorf("failed to unmount old root (%s): %w", oldRoot, err)
+		return fmt.Errorf("failed to unmount old root: %w", err)
 	}
 	if err := os.RemoveAll(oldRoot); err != nil {
-		return fmt.Errorf("failed to remove old root dir (%s): %w", oldRoot, err)
+		return fmt.Errorf("failed to remove old root: %w", err)
 	}
 
 	return nil

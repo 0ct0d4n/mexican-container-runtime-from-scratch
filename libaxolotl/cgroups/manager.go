@@ -1,4 +1,3 @@
-// Package cgroups provides cgroup v2 management for container resource isolation
 package cgroups
 
 import (
@@ -11,17 +10,14 @@ import (
 )
 
 const (
-	// CgroupRoot is the cgroup v2 unified hierarchy mount point
 	CgroupRoot = "/sys/fs/cgroup/axolotl/"
 )
 
-// Manager handles cgroup lifecycle and resource limits
 type Manager struct {
 	path   string
 	config *types.CgroupNamespace
 }
 
-// NewManager creates a new cgroup manager for the given container configuration
 func NewManager(cfg *types.ContainerSetupSettings) (*Manager, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("configuration cannot be nil")
@@ -53,7 +49,6 @@ func EnsureAxolotlRoot() error {
 		return err
 	}
 
-	// Must be empty of processes
 	procs, err := os.ReadFile(filepath.Join(CgroupRoot, "cgroup.procs"))
 	if err != nil {
 		return err
@@ -62,7 +57,6 @@ func EnsureAxolotlRoot() error {
 		return fmt.Errorf("axolotl root cgroup has processes; can't enable controllers")
 	}
 
-	// Enable controllers
 	if err := os.WriteFile(
 		filepath.Join(CgroupRoot, "cgroup.subtree_control"),
 		[]byte("+memory +cpu +pids"),
@@ -77,14 +71,12 @@ func (m *Manager) CreateCgroup() error {
 	info, err := os.Stat(m.path)
 
 	if err == nil {
-		// Path exists: verify it's a directory
 		if !info.IsDir() {
 			return fmt.Errorf("%s exists but is not a directory", m.path)
 		}
 		return nil
 	}
 
-	// If doesn't exist, create it
 	if os.IsNotExist(err) {
 		if err := os.MkdirAll(m.path, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", m.path, err)
@@ -92,11 +84,9 @@ func (m *Manager) CreateCgroup() error {
 		return nil
 	}
 
-	// Unexpected error
 	return fmt.Errorf("error checking %s: %w", m.path, err)
 }
 
-// ApplyLimits applies all configured resource limits (memory, CPU, PIDs)
 func (m *Manager) ApplyLimits() error {
 	if err := m.applyMemoryLimit(); err != nil {
 		return err
@@ -110,12 +100,10 @@ func (m *Manager) ApplyLimits() error {
 	return nil
 }
 
-// Path returns the cgroup filesystem path
 func (m *Manager) Path() string {
 	return m.path
 }
 
-// Destroy removes the cgroup directory
 func (m *Manager) Destroy() error {
 	if err := os.RemoveAll(m.path); err != nil {
 		return fmt.Errorf("failed to remove cgroup %s: %w", m.path, err)
@@ -124,15 +112,10 @@ func (m *Manager) Destroy() error {
 	return nil
 }
 
-// buildCgroupPath constructs the cgroup path from container settings
 func buildCgroupPath(cfg *types.ContainerSetupSettings) string {
-	// Use underscore separator to create a flat cgroup hierarchy
-	// Example: /sys/fs/cgroup/org_containername_path
-	//name := cfg.Org + "_" + cfg.ContainerName + "_" + cfg.Cgroup.Path
 	return filepath.Join(CgroupRoot, cfg.ID)
 }
 
-// currentSlice returns the current systemd slice this process belongs to
 func currentSlice() string {
 	data, err := os.ReadFile("/proc/self/cgroup")
 	if err != nil {
@@ -151,12 +134,9 @@ func currentSlice() string {
 			continue
 		}
 
-		// This is the cgroup path
-		path := parts[2] // example: "/system.slice/axod.service"
+		path := parts[2]
 
-		// Identify valid systemd paths
 		if strings.Contains(path, ".slice") {
-			// Remove leading "/"
 			return strings.TrimPrefix(path, "/")
 		}
 	}
@@ -164,20 +144,16 @@ func currentSlice() string {
 	return ""
 }
 
-// RunningInsideSystemd checks if the process is running inside systemd
 func RunningInsideSystemd() (bool, string) {
 	content := currentSlice()
 
-	// systemd always puts services in "system.slice/<service>.service"
 	if strings.Contains(content, "system.slice") {
 		return true, content
 	}
 
-	// user services: "user.slice/user-1000.slice"
 	if strings.Contains(content, "user.slice") {
 		return true, content
 	}
 
-	// if it doesn't belong to any "usual" slice, it's normal execution
 	return false, content
 }

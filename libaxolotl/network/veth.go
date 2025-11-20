@@ -1,4 +1,3 @@
-// Package network provides network namespace and veth pair management
 package network
 
 import (
@@ -8,15 +7,12 @@ import (
 	"os/exec"
 )
 
-// VethPair represents a virtual ethernet pair for container networking
 type VethPair struct {
-	HostVeth      string // veth interface on the host
-	ContainerVeth string // veth interface inside container
+	HostVeth      string
+	ContainerVeth string
 }
 
-// NewVethPair creates a new veth pair with names based on container ID
 func NewVethPair(containerID string) *VethPair {
-	// Truncate ID to keep interface names short (max 15 chars for ifname)
 	shortID := containerID
 	if len(shortID) > 7 {
 		shortID = shortID[:7]
@@ -28,7 +24,6 @@ func NewVethPair(containerID string) *VethPair {
 	}
 }
 
-// Create creates the veth pair on the host
 func (v *VethPair) Create() error {
 	cmd := exec.Command("ip", "link", "add", v.HostVeth, "type", "veth", "peer", "name", v.ContainerVeth)
 	cmd.Stdout = os.Stdout
@@ -38,11 +33,10 @@ func (v *VethPair) Create() error {
 		return fmt.Errorf("failed to create veth pair: %w", err)
 	}
 
-	log.Printf("[NETWORK] Created veth pair: host=%s container=%s", v.HostVeth, v.ContainerVeth)
+	log.Printf("[NET] Created veth pair: %s <-> %s", v.HostVeth, v.ContainerVeth)
 	return nil
 }
 
-// MoveToNamespace moves the container veth to the specified network namespace (by PID)
 func (v *VethPair) MoveToNamespace(pid string) error {
 	cmd := exec.Command("ip", "link", "set", v.ContainerVeth, "netns", pid)
 	cmd.Stdout = os.Stdout
@@ -52,11 +46,10 @@ func (v *VethPair) MoveToNamespace(pid string) error {
 		return fmt.Errorf("failed to move %s to netns %s: %w", v.ContainerVeth, pid, err)
 	}
 
-	log.Printf("[NETWORK] Moved %s to netns of PID=%s", v.ContainerVeth, pid)
+	log.Printf("[NET] Moved %s to container netns (PID %s)", v.ContainerVeth, pid)
 	return nil
 }
 
-// BringUpHost brings up the host-side veth interface
 func (v *VethPair) BringUpHost() error {
 	cmd := exec.Command("ip", "link", "set", v.HostVeth, "up")
 	cmd.Stdout = os.Stdout
@@ -66,27 +59,19 @@ func (v *VethPair) BringUpHost() error {
 		return fmt.Errorf("failed to bring up %s: %w", v.HostVeth, err)
 	}
 
-	log.Printf("[NETWORK] Host veth %s is UP", v.HostVeth)
+	log.Printf("[NET] Host interface %s is up", v.HostVeth)
 	return nil
 }
 
-// SetupHostNetworking performs all host-side network setup
-// 1. Creates veth pair
-// 2. Moves container veth to container's netns
-// 3. Brings up host veth
 func SetupHostNetworking(veth *VethPair, containerPID string) error {
-
-	// Create veth pair
 	if err := veth.Create(); err != nil {
 		return err
 	}
 
-	// Move container veth to container's namespace
 	if err := veth.MoveToNamespace(containerPID); err != nil {
 		return err
 	}
 
-	// Bring up host veth
 	if err := veth.BringUpHost(); err != nil {
 		return err
 	}
