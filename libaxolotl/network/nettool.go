@@ -1,7 +1,6 @@
 package network
 
 import (
-	"axolotl/internal/util/rootfs"
 	"os"
 )
 
@@ -11,20 +10,20 @@ type NetTool interface {
 	RouteAddDefault(gateway string) error
 }
 
-func ResolveNetworkTool(distro rootfs.DistroType, rootfsPath string) NetTool {
+func ResolveNetworkTool(rootfsPath string) NetTool {
 	if Exists(rootfsPath + "/bin/busybox") {
 		return &BusyboxNetTool{}
 	}
-	//if Exists(rootfsPath + "/sbin/ip") {
-	//	return &IpRoute2Tool{Path: "/sbin/ip"}
-	//}
-	//if Exists(rootfsPath + "/bin/ip") {
-	//	return &IpRoute2Tool{Path: "/bin/ip"}
-	//}
-	//if Exists(rootfsPath + "/usr/bin/ip") {
-	//	return &IpRoute2Tool{Path: "/usr/bin/ip"}
-	//}
-	//
+	if Exists(rootfsPath + "/sbin/ip") {
+		return &IpRoute2Tool{Path: "/sbin/ip"}
+	}
+	if Exists(rootfsPath + "/bin/ip") {
+		return &IpRoute2Tool{Path: "/bin/ip"}
+	}
+	if Exists(rootfsPath + "/usr/bin/ip") {
+		return &IpRoute2Tool{Path: "/usr/bin/ip"}
+	}
+
 	//return &DirectSysfsTool{} // ultra fallback
 	return nil
 }
