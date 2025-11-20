@@ -97,23 +97,22 @@ func (v *VethPair) ConfigureContainerSide(ip string) error {
 // 1. Creates veth pair
 // 2. Moves container veth to container's netns
 // 3. Brings up host veth
-func SetupHostNetworking(containerID, containerPID string) (*VethPair, error) {
-	veth := NewVethPair(containerID)
+func SetupHostNetworking(veth *VethPair, containerPID string) error {
 
 	// Create veth pair
 	if err := veth.Create(); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Move container veth to container's namespace
 	if err := veth.MoveToNamespace(containerPID); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Bring up host veth
 	if err := veth.BringUpHost(); err != nil {
-		return nil, err
+		return err
 	}
 
-	return veth, nil
+	return nil
 }

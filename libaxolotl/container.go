@@ -66,10 +66,10 @@ func Start(request *types.RunRequest) error {
 func spawnContainer(container *rootfs.Container) error {
 	// Prepare init config
 	initCfg := &InitConfig{
-		RootfsPath:    container.RootfsPath,
-		ContainerVeth: container.ContainerVeth,
-		ContainerIP:   "10.0.0.2/24",
-		Commands:      container.Commands,
+		RootfsPath:  container.RootfsPath,
+		ContainerIP: "10.0.0.2/24",
+		Commands:    container.Commands,
+		VethPair:    network.NewVethPair(container.ID),
 	}
 
 	// Re-execute ourselves in init mode with namespaces
@@ -105,12 +105,10 @@ func spawnContainer(container *rootfs.Container) error {
 	log.Printf("[CONTAINER] Child process started with PID=%d", childPID)
 
 	// Step 6: Setup host-side networking (veth pair)
-	veth, err := network.SetupHostNetworking(container.ID, strconv.Itoa(childPID))
-	if err != nil {
+	if err := network.SetupHostNetworking(initCfg.VethPair, strconv.Itoa(childPID)); err != nil {
 		return fmt.Errorf("failed to setup host networking: %w", err)
 	}
-
-	log.Printf("[CONTAINER] Host networking configured: %s <-> %s", veth.HostVeth, veth.ContainerVeth)
+	log.Printf("[CONTAINER] Host networking configured: %s <-> %s", initCfg.VethPair.HostVeth, initCfg.VethPair.ContainerVeth)
 
 	// Step 7: Wait for container to finish
 	if err := cmd.Wait(); err != nil {

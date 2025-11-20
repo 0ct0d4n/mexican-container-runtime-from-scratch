@@ -19,10 +19,10 @@ import (
 
 // InitConfig holds the configuration for container initialization
 type InitConfig struct {
-	RootfsPath    string
-	ContainerVeth string
-	ContainerIP   string
-	Commands      types.Commands
+	RootfsPath  string
+	VethPair    *network.VethPair
+	ContainerIP string
+	Commands    types.Commands
 }
 
 // InitContainer performs all container initialization steps
@@ -52,11 +52,8 @@ func InitContainer(cfg *InitConfig) error {
 	log.Printf("[INIT] Container mounted successfully (PID=%d)", os.Getpid())
 
 	// Step 5: Configure container networking
-	veth := &network.VethPair{
-		HostVeth:      "",                // Not used inside container
-		ContainerVeth: cfg.ContainerVeth,
-	}
-	if err := veth.ConfigureContainerSide(cfg.ContainerIP); err != nil {
+
+	if err := cfg.VethPair.ConfigureContainerSide(cfg.ContainerIP); err != nil {
 		return fmt.Errorf("failed to configure container network: %w", err)
 	}
 
