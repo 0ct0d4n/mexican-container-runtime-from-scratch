@@ -42,8 +42,7 @@ func startDaemonMode() {
 	log.Println("Starting daemon")
 	err := cgroups.EnsureAxolotlRoot()
 	if err != nil {
-		log.Fatal(err)
-		return
+		log.Println("Axolotl Root already exists and it's in place, not something to worry about :) ", err)
 	}
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
