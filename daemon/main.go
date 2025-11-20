@@ -28,7 +28,7 @@ func main() {
 	startDaemonMode()
 }
 func runContainerInit() error {
-	var image *rootfs.RootFSInstallationConfig
+	var image *rootfs.ContainerParameters
 	if err := json.NewDecoder(os.Stdin).Decode(&image); err != nil {
 		return fmt.Errorf("invalid JSON: %w", err)
 	}

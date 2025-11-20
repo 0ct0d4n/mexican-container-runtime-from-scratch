@@ -5,6 +5,7 @@ package rootfs
 
 import (
 	"axolotl/pkg/model"
+	"axolotl/pkg/server/network"
 	"axolotl/pkg/util"
 	"axolotl/pkg/util/tini"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"golang.org/x/sys/unix"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -27,7 +29,7 @@ type MountPoint struct {
 	Data   string
 }
 
-type RootFSInstallationConfig struct {
+type ContainerParameters struct {
 	Id                  string
 	InstallationPath    string
 	DownloadName        string
@@ -35,9 +37,11 @@ type RootFSInstallationConfig struct {
 	Distro              rootfs.DistroType
 	CanonicalRootfsPath string
 	Commands            model.Commands
+	Veth                string
+	VethC               string
 }
 
-func InstallImage(diskPath string, config *model.NamespaceConfig, command model.Commands) (*RootFSInstallationConfig, error) {
+func InstallImage(diskPath string, config *model.ContainerSetupSettings, command model.Commands) (*ContainerParameters, error) {
 	var distroCfg rootfs.RootFSConfig
 	var err error
 
@@ -60,7 +64,8 @@ func InstallImage(diskPath string, config *model.NamespaceConfig, command model.
 		return nil, err
 	}
 
-	return &RootFSInstallationConfig{
+	veth, vethc := network.VethName(config.ID)
+	return &ContainerParameters{
 		Id:                  config.ID,
 		InstallationPath:    installationPath,
 		Config:              &distroCfg,
@@ -68,9 +73,12 @@ func InstallImage(diskPath string, config *model.NamespaceConfig, command model.
 		Distro:              distroType,
 		CanonicalRootfsPath: canonicalRootfsPath,
 		Commands:            command,
+		Veth:                veth,
+		VethC:               vethc,
 	}, nil
 }
-func CleanupMounts(c *RootFSInstallationConfig) {
+
+func CleanupMounts(c *ContainerParameters) {
 	log.Println("about to unmount points for ", c.CanonicalRootfsPath)
 	dirs := GetMountPoint(c)
 	for _, d := range dirs {
@@ -78,8 +86,26 @@ func CleanupMounts(c *RootFSInstallationConfig) {
 		syscall.Unmount(d.Dst, syscall.MNT_DETACH)
 	}
 }
+func (c *ContainerParameters) ConfigureContainerNetworking() error {
+	cmds := [][]string{
+		{"ip", "link", "set", "lo", "up"},
+		{"ip", "link", "set", c.VethC, "up"},
+		{"ip", "addr", "add", "10.0.0.2/24", "dev", c.VethC},
+	}
 
-func (c *RootFSInstallationConfig) Mount() error {
+	for _, cmdArgs := range cmds {
+		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("NETNS config failed (%v): %w", cmdArgs, err)
+		}
+	}
+
+	return nil
+}
+
+func (c *ContainerParameters) Mount() error {
 	if err := unix.Mount("", "/", "", unix.MS_REC|unix.MS_PRIVATE, ""); err != nil {
 		return fmt.Errorf("failed to set mount propagation: %w", err)
 	}
@@ -95,10 +121,15 @@ func (c *RootFSInstallationConfig) Mount() error {
 	go c.reapZombies()
 	log.Println("Container mounted successfully :D enjoy! current PID=", os.Getpid())
 
+	// configure vethc inside netns
+	if err := c.ConfigureContainerNetworking(); err != nil {
+		return err
+	}
+
 	return tini.StartMainProcess(c.Commands.Command, c.Commands.Args...)
 }
 
-func (c *RootFSInstallationConfig) mountBasics() error {
+func (c *ContainerParameters) mountBasics() error {
 	mounts := GetMountPoint(c)
 	for _, m := range mounts {
 		err := os.MkdirAll(m.Dst, 0755)
@@ -112,7 +143,7 @@ func (c *RootFSInstallationConfig) mountBasics() error {
 	return nil
 }
 
-func GetMountPoint(c *RootFSInstallationConfig) []MountPoint {
+func GetMountPoint(c *ContainerParameters) []MountPoint {
 	mounts := []MountPoint{
 		{Src: "proc", Dst: filepath.Join(c.CanonicalRootfsPath, "proc"), Fstype: "proc", Flags: 0},
 		{Src: "sysfs", Dst: filepath.Join(c.CanonicalRootfsPath, "sys"), Fstype: "sysfs", Flags: 0},
@@ -123,13 +154,13 @@ func GetMountPoint(c *RootFSInstallationConfig) []MountPoint {
 }
 
 // @deprecated it's unsecure please do not use.
-func (c *RootFSInstallationConfig) enterChroot() error {
+func (c *ContainerParameters) enterChroot() error {
 	if err := syscall.Chroot(c.CanonicalRootfsPath); err != nil {
 		return fmt.Errorf("error en chroot: %w %v", err, c.CanonicalRootfsPath)
 	}
 	return os.Chdir("/")
 }
-func (c *RootFSInstallationConfig) pivotRoot() error {
+func (c *ContainerParameters) pivotRoot() error {
 	rootfs := c.CanonicalRootfsPath
 
 	if err := unix.Mount(rootfs, rootfs, "", unix.MS_BIND|unix.MS_REC, ""); err != nil {
@@ -159,13 +190,13 @@ func (c *RootFSInstallationConfig) pivotRoot() error {
 
 	return nil
 }
-func (c *RootFSInstallationConfig) execShell() error {
+func (c *ContainerParameters) execShell() error {
 	//return syscall.Exec("/bin/sh", []string{"/bin/sh"}, os.Environ())
 	log.Println("Container mounted successfully :D enjoy! current PID=", os.Getpid())
 	return syscall.Exec("/bin/sh", []string{"/bin/sh", "-c", "echo CONTAINER_IS_WORKING_NOW!; "}, os.Environ())
 }
 
-func (c *RootFSInstallationConfig) reapZombies() {
+func (c *ContainerParameters) reapZombies() {
 	log.Println("Reaping Zombies...")
 	for {
 		var status syscall.WaitStatus
@@ -183,4 +214,36 @@ func (c *RootFSInstallationConfig) reapZombies() {
 
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+func (c *ContainerParameters) CreateNetworkingHost(containerPid string) error {
+
+	// 1. Crear veth pair
+	cmd := exec.Command("ip", "link", "add", c.Veth, "type", "veth", "peer", "name", c.VethC)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create veth pair: %w", err)
+	}
+	log.Printf("[INIT] Created veth pair veth=%s, vethc=%s", c.Veth, c.VethC)
+
+	// 2. Mover vethc al namespace del container (PID real)
+	cmd = exec.Command("ip", "link", "set", c.VethC, "netns", containerPid)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to set vethc into the container: %w", err)
+	}
+	log.Printf("[INIT] Moved vethc=%s into netns of PID=%s", c.VethC, containerPid)
+
+	// 3. Levantar la interfaz del host
+	cmd = exec.Command("ip", "link", "set", c.Veth, "up")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to bring up veth: %w", err)
+	}
+	log.Printf("[INIT] veth=%s is now UP", c.Veth)
+
+	return nil
 }

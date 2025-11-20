@@ -51,7 +51,7 @@ type TimeNamespace struct {
 	OffsetSeconds int64 `json:"offset_seconds"`
 }
 
-type NamespaceConfig struct {
+type ContainerSetupSettings struct {
 	ID            string            `json:"id,omitempty"`
 	Org           string            `json:"org,omitempty"`
 	ContainerName string            `json:"container_name"`
@@ -67,8 +67,8 @@ type NamespaceConfig struct {
 }
 
 type RunRequest struct {
-	Command   Commands         `json:"command,omitempty"`
-	Namespace *NamespaceConfig `json:"namespaces,omitempty"`
+	Command   Commands                `json:"command,omitempty"`
+	Namespace *ContainerSetupSettings `json:"namespaces,omitempty"`
 }
 type Commands struct {
 	Command string

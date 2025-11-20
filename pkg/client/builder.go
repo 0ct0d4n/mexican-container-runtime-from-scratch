@@ -132,7 +132,7 @@ func (b *RequestBuilder) WithTime(offsetSeconds int64) *RequestBuilder {
 // Build creates a RunRequest with validation.
 func (b *RequestBuilder) Build() (*model.RunRequest, error) {
 	// Build namespace config
-	namespace := &model.NamespaceConfig{
+	namespace := &model.ContainerSetupSettings{
 		ContainerName: b.containerName,
 		Org:           b.org,
 		ImageName:     b.image,
@@ -159,7 +159,7 @@ func (b *RequestBuilder) Build() (*model.RunRequest, error) {
 }
 
 // validate performs validation on the request.
-func (b *RequestBuilder) validate(ns *model.NamespaceConfig) error {
+func (b *RequestBuilder) validate(ns *model.ContainerSetupSettings) error {
 	// At least one namespace configuration should be provided
 	hasNamespace := ns.Cgroup != nil || ns.UTS != nil || ns.PID != nil ||
 		ns.Network != nil || ns.Mount != nil || ns.IPC != nil ||

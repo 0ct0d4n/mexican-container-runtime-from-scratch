@@ -16,7 +16,7 @@ type TmpCgroup struct {
 	cgroup *model.CgroupNamespace
 }
 
-func createCgroup(cfg *model.NamespaceConfig) (*TmpCgroup, error) {
+func createCgroup(cfg *model.ContainerSetupSettings) (*TmpCgroup, error) {
 	// Validación de entrada
 	if cfg == nil {
 		return nil, fmt.Errorf("❌ [CGROUP] Configuración nula")

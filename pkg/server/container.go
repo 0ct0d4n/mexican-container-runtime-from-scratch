@@ -34,7 +34,7 @@ func StartContainer(err error, payload *model.RunRequest) error {
 	return spawnProcess(err, image)
 }
 
-func spawnProcess(err error, image *rootfs.RootFSInstallationConfig) error {
+func spawnProcess(err error, image *rootfs.ContainerParameters) error {
 	cmd := exec.Command("/proc/self/exe", "init-container")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWNS |

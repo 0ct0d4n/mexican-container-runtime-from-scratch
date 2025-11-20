@@ -48,7 +48,7 @@ func EnsureDir(path string) error {
 	return fmt.Errorf("❌ Error verificando %s: %w", path, err)
 }
 
-func BuildCgroupPath(cfg *model.NamespaceConfig) string {
+func BuildCgroupPath(cfg *model.ContainerSetupSettings) string {
 	//isSystemd, c := RunningInsideSystemd()
 	//if !isSystemd {
 	//	return filepath.Join(CgroupSysPathNS, cfg.Org, cfg.ContainerName, cfg.Cgroup.Path)
